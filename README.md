@@ -2,23 +2,15 @@
 
 # [ADempiere.net (en)](https://klst-de.github.io/adempiere/)
 
-- The official(!) page is in: http://www.adempiere.net
-- The official Wiki is in: http://wiki.adempiere.net
-- The installation steps are in: http://wiki.adempiere.net/Installation_Steps
-- For download and debug the source see: http://adempiere.net/web/guest/sourcecode
-- For see a demo see: http://adempiere.net/web/guest/demo
-- You can see the business process on: http://adempiere.net/web/guest/business-process
-- If you need report a bug see: https://github.com/adempiere/adempiere/issues
+Is *.net the official(!) successor of compiere
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adempiere/adempiere?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# [ADempiere.org (en)](http://adempiere.org/site/)
 
-# [adempiere.org (en)](http://adempiere.org/site/)
-
-Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php): http://adempiere.org/site/
+Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php)
  
 # [IDempiere](https://en.wikipedia.org/wiki/IDempiere)
 
-
+[iDempiere](http://www.idempiere.org/) is a grandchild of [compiere](http://www.compiere.com/svn/)
 
 ## Welcome to GitHub Pages
 

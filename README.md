@@ -1,4 +1,24 @@
-# [ADempiere (en)](https://klst-de.github.io/adempiere/)
+[Ade-mpiere](https://github.com/klst-de/adempiere) is a [fork](https://en.wikipedia.org/wiki/Fork_(software_development)) of  [adempiere](https://github.com/adempiere/adempiere)-repo, one of the children of [Compiere ERP system](https://en.wikipedia.org/wiki/Compiere) which was developed in the late 90th
+
+# [ADempiere.net (en)](https://klst-de.github.io/adempiere/)
+
+- The official(!) page is in: http://www.adempiere.net
+- The official Wiki is in: http://wiki.adempiere.net
+- The installation steps are in: http://wiki.adempiere.net/Installation_Steps
+- For download and debug the source see: http://adempiere.net/web/guest/sourcecode
+- For see a demo see: http://adempiere.net/web/guest/demo
+- You can see the business process on: http://adempiere.net/web/guest/business-process
+- If you need report a bug see: https://github.com/adempiere/adempiere/issues
+
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adempiere/adempiere?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+# [adempiere.org (en)](http://adempiere.org/site/)
+
+Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php): http://adempiere.org/site/
+ 
+# [IDempiere](https://en.wikipedia.org/wiki/IDempiere)
+
+
 
 ## Welcome to GitHub Pages
 

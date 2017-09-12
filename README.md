@@ -1,4 +1,4 @@
-# [ADempiere](https://github.com/klst-de/adempiere/blob/develop/README.md)
+# [ADempiere (en)](https://klst-de.github.io/adempiere/)
 
 ## Welcome to GitHub Pages
 

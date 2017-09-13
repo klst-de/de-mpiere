@@ -6,7 +6,7 @@ Is *.net the official(!) successor of compiere
 
 # [ADempiere.org (en)](http://adempiere.org/site/)
 
-Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php) [[images/AdempiereLogo.png]]
+Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php) ![ADempiere.org Logo](images/AdempiereLogo.png)
  
 # [IDempiere](https://en.wikipedia.org/wiki/IDempiere)
 

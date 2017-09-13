@@ -9,3 +9,6 @@
 ![](images/ADLogos.PNG)
 
 # de-mpiere
+## [Installation (en)](http://wiki.adempiere.net/Installation_Steps)
+## [Einrichten der Sprache](https://bitbucket.org/eugenh/de.mpiere/wiki/Sprache)
+## Einrichten eines Mandanten

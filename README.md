@@ -4,7 +4,7 @@
 
 * [ADempiere.net (en)](https://klst-de.github.io/adempiere/) : is *.net the official(!) successor of compiere?
 
-* [ADempiere.org (en)](http://adempiere.org/site/) : or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php) !
+* [ADempiere.org (en)](http://adempiere.org/site/) : or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php)?
  
 * [IDempiere](https://en.wikipedia.org/wiki/IDempiere) : [iDempiere](http://www.idempiere.org/) is a grandchild of [compiere](http://www.compiere.com/svn/)
 

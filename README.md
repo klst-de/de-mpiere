@@ -1,16 +1,18 @@
 [Ade-mpiere](https://github.com/klst-de/adempiere) is a [fork](https://en.wikipedia.org/wiki/Fork_(software_development)) of  [adempiere](https://github.com/adempiere/adempiere)-repo, one of the children of [Compiere ERP system](https://en.wikipedia.org/wiki/Compiere) which was developed in the late 90th
 
-# [ADempiere.net (en)](https://klst-de.github.io/adempiere/)
+# [History](https://en.wikipedia.org/wiki/IDempiere#History)
 
-Is *.net the official(!) successor of compiere
+* [ADempiere.net (en)](https://klst-de.github.io/adempiere/) : is *.net the official(!) successor of compiere?
 
-# [ADempiere.org (en)](http://adempiere.org/site/)
-
-Or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php) ![ADempiere.org Logo](images/AdempiereLogo.png)
+* [ADempiere.org (en)](http://adempiere.org/site/) : or is this the official(!) page of the successor of [compiere](http://www.compiere.com/company/history.php) !
  
-# [IDempiere](https://en.wikipedia.org/wiki/IDempiere)
+* [IDempiere](https://en.wikipedia.org/wiki/IDempiere) : [iDempiere](http://www.idempiere.org/) is a grandchild of [compiere](http://www.compiere.com/svn/)
 
-[iDempiere](http://www.idempiere.org/) is a grandchild of [compiere](http://www.compiere.com/svn/)
+Compiere | ADempiere             | iDempiere  
+-------- | --------------------- | ---------
+![Compiere](images/CompiereLogo.jpg) | ![ADempiere.org Logo](images/AdempiereLogo.png) | ![idempiere.org Logo](images/IDempiereLogo.png)
+| ![ADempiere.net Logo](images/Adempiere390.png) |              
+
 
 ## Welcome to GitHub Pages
 

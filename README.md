@@ -10,8 +10,7 @@
 
 Compiere | ADempiere             | iDempiere  
 -------- | --------------------- | ---------
-![Compiere](images/CompiereLogo.jpg){:height="100px"} | ![ADempiere.org Logo](images/AdempiereLogo.png){:height="100px"} | ![idempiere.org Logo](images/IDempiereLogo.png){:height="100px"}
-                                           | ![ADempiere.net Logo](images/Adempiere390.png){:height="100px"} |              
+![Compiere](images/CompiereLogo.jpg) | ![ADempiere.org Logo](images/AdempiereLogo.png) ![ADempiere.net Logo](images/Adempiere390.png) | ![idempiere.org Logo](images/IDempiereLogo.png)
 
 
 ## Welcome to GitHub Pages

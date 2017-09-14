@@ -8,7 +8,7 @@ import java.sql.SQLException
 
 class ImportScript extends Script {
 
-	def CLASSNAME = "com.klst.importValidator.ImportScript" //this.getClass().getName()
+	def CLASSNAME = "com.klst.importDomain.ImportScript" //this.getClass().getName()
 	def DEFAULT_FROM_SCHEMA = "mierp001"
 	def DEFAULT_TO_SCHEMA = "adempiere"
 	def SUPER_USER_ID = 100
@@ -152,12 +152,14 @@ DELETE FROM ${tablename}
 		return sql			
 	}
 	
-	def	makeInsert = { tablename , useSuperUser=true , SuperUserId=SUPER_USER_ID->
+	def	makeInsert = { tablename , nullcolumns=[] , useSuperUser=true , SuperUserId=SUPER_USER_ID->
 		def selo = (commonKeys.collect  { "$it" } as Iterable).join(', ')
 		def selm = (commonKeys.collect  { "m.$it" } as Iterable).join(', ')
 		if(useSuperUser) { // use SuperUserId for cols
 			selm = selm.replaceFirst("m.createdby", SuperUserId.toString()).replaceFirst("m.updatedby", SuperUserId.toString())
 		}
+		println "${CLASSNAME}:makeInsert size ${nullcolumns.size()}"
+		nullcolumns.each { selm = selm.replaceFirst("m.${it}", "null") }
 		println "${CLASSNAME}:makeInsert ${selm}"
 		def sql = """
 INSERT INTO ${tablename} ( ${selo} ) 
@@ -167,8 +169,8 @@ INSERT INTO ${tablename} ( ${selo} )
 		return sql			
 	}
 	
-	def doInsert = { tablename , keycolumns=[] , nameValue=NAMEVALUE ->
-		println "${CLASSNAME}:doInsert ${tablename} PRIMARY KEY = ${keycolumns}."
+	def doInsert = { tablename , nullcolumns=[] , clientID=DEFAULT_CLIENT_ID ->
+		println "${CLASSNAME}:doInsert ${tablename} nullcolumns = ${nullcolumns}."
 		if(n_live_tup.get(tablename)==null) {
 			println "${CLASSNAME}:doInsert ${tablename} leer -> nix zu tun."
 			return 0
@@ -188,21 +190,23 @@ INSERT INTO ${tablename} ( ${selo} )
 		} else {
 			throw new RuntimeException("keine matching Spalten gefunden")
 		}
+		
+		//return makeInsert(tablename,nullcolumns) //test
 		// vorher löschen
 		def sql = makeDelete(tablename)
 		println "${sql}"
-//		return -1
+
 		def deletes = 0
 		def inserts = 0
 		sqlInstance.connection.autoCommit = false
 		try {
-			sqlInstance.execute(sql,[DEFAULT_CLIENT_ID]) // DEFAULT_CLIENT_ID == 1000000 == ad_client_id
+			sqlInstance.execute(sql,[clientID])  
 			deletes = sqlInstance.getUpdateCount()
 			println "${CLASSNAME}:doInsert deletes = ${deletes}."
 				
-			sql = makeInsert(tablename)
+			sql = makeInsert(tablename,nullcolumns)
 			println "${sql}"
-			sqlInstance.execute(sql,[DEFAULT_CLIENT_ID]) // DEFAULT_CLIENT_ID == 1000000 == ad_client_id
+			sqlInstance.execute(sql,[clientID])  
 			inserts = sqlInstance.getUpdateCount()
 			println "${CLASSNAME}:doInsert inserts = ${inserts}."
 			
@@ -262,7 +266,7 @@ ON CONFLICT (${keycolumns[0]})
 	}
 	
 	@Override
-	public Object run() {
+	public Object run() {  // nur Test
 		println "${CLASSNAME}:run"
 		println "${CLASSNAME}:run ${this.sqlInstance}"
 		rowsPerTable()
@@ -271,6 +275,10 @@ ON CONFLICT (${keycolumns[0]})
 		assert(0==doMerge("i_asset"))
 		//assert(0==doMerge("ad_org",['ad_org_id']))
 		//assert(0==doInsert("c_region",['c_region_id']))
+		def sql = doInsert("ad_user",["c_bpartner_id","c_bpartner_location_id"])
+		println "${CLASSNAME}:run doInsert ad_user \n${sql}"
+		sql = doInsert("c_greeting") 
+		println "${CLASSNAME}:run doInsert ad_user \n${sql}"
 		return this;
 	}
 

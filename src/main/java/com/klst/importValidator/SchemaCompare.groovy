@@ -160,6 +160,7 @@ WHERE table_schema = :schema and table_name = :tablename
 //				println "${CLASSNAME}:doInsert PASSED number of columns = ${origin.size()}."
 			} else {
 //				println "${CLASSNAME}:doInsert differnt number of columns: origin = ${origin.size()} <> target = ${target.size()}."
+				
 				// uncomment for diff
 //				println " ${DEFAULT_FROM_SCHEMA}: ${origin}"
 //				println "${DEFAULT_TO_SCHEMA}: ${target}"

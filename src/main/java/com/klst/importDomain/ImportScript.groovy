@@ -260,9 +260,19 @@ ON CONFLICT (${keycolumns[0]})
 		}
 		def sql = makeMerge(tablename , keycolumns)
 		println "${sql}"
-		sqlInstance.execute(sql,[DEFAULT_CLIENT_ID,DEFAULT_CLIENT_ID]) // DEFAULT_CLIENT_ID == 1000000 == ad_client_id
-		def updates = sqlInstance.getUpdateCount()
-		println "${CLASSNAME}:doMerge updates = ${updates}."
+		
+		def updates = 0
+		sqlInstance.connection.autoCommit = false
+		try {
+			sqlInstance.execute(sql,[DEFAULT_CLIENT_ID,DEFAULT_CLIENT_ID])
+			updates = sqlInstance.getUpdateCount()
+			println "${CLASSNAME}:doMerge updates = ${updates}."
+			sqlInstance.commit();
+		}catch(SQLException ex) {
+			println "${CLASSNAME}:doMerge ${ex}"
+			sqlInstance.rollback()
+			println "${CLASSNAME}:doMerge Transaction rollback." 
+		}
 		return updates
 	}
 	

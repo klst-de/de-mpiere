@@ -12,6 +12,7 @@ class ImportScript extends Script {
 	def DEFAULT_FROM_SCHEMA = "mierp001"
 	def DEFAULT_TO_SCHEMA = "adempiere"
 	def SUPER_USER_ID = 100
+	def SYSTEM_CLIENT_ID = 0
 	def GERDENWORD_CLIENT_ID = 11
 	def DEFAULT_CLIENT_ID = 1000000
 	Sql sqlInstance;

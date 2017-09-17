@@ -10,5 +10,5 @@
 
 # [de-mpiere](1.de-mpiere.md)
 ## [Installation (en)](http://wiki.adempiere.net/Installation_Steps)
-## [Einrichten der Sprache](https://bitbucket.org/eugenh/de.mpiere/wiki/Sprache)
-## Einrichten eines Mandanten
+## [Anpassung der Übersetzungssprache](http://wiki.idempiere.org/de/Sprache_(Fenster_ID-106)#Beitr.C3.A4ge)
+## [Einrichten eines Mandanten](1.de-mpiere.md)

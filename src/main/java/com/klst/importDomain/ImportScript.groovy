@@ -156,7 +156,8 @@ WHERE table_schema = :schema and table_name = :tablename
 				res = isResultSet // true
 			} else {
 				res = sqlInstance.getUpdateCount()
-				println "${CLASSNAME}:doSql updates = ${res} : ${sql}"
+				println "${CLASSNAME}:doSql updates = ${res} : ${sql} param =  ${param}"
+				sqlInstance.commit();
 			}
 		}catch(SQLException ex) {
 			println "${CLASSNAME}:doSql ${ex}"

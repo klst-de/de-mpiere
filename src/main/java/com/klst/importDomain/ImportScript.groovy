@@ -145,6 +145,28 @@ WHERE table_schema = :schema and table_name = :tablename
 		}
 	}
 
+	// Returns:true if the first result is a ResultSet object; or an update count
+	def doSql = { sql , param=[] ->
+		def current = sqlInstance.connection.autoCommit = false
+		def res
+		try {
+			def isResultSet = sqlInstance.execute(sql,param) 
+			if(isResultSet) {
+				println "${CLASSNAME}:doSql isQuery : ${sql}"
+				res = isResultSet // true
+			} else {
+				res = sqlInstance.getUpdateCount()
+				println "${CLASSNAME}:doSql updates = ${res} : ${sql}"
+			}
+		}catch(SQLException ex) {
+			println "${CLASSNAME}:doSql ${ex}"
+			sqlInstance.rollback()
+			println "${CLASSNAME}:doSql Transaction rollback."
+		}
+		sqlInstance.connection.autoCommit = current
+		return res
+	}
+	
 	def	makeDelete = { tablename ->
 		def sql = """
 DELETE FROM ${tablename} 
@@ -153,7 +175,7 @@ DELETE FROM ${tablename}
 		return sql			
 	}
 	
-	def	makeInsert = { tablename , nullcolumns=[] , useSuperUser=true , SuperUserId=SUPER_USER_ID->
+	def	makeInsert = { tablename , nullcolumns=[] , useSuperUser=false , SuperUserId=SUPER_USER_ID->
 		def selo = (commonKeys.collect  { "$it" } as Iterable).join(', ')
 		def selm = (commonKeys.collect  { "m.$it" } as Iterable).join(', ')
 		if(useSuperUser) { // use SuperUserId for cols
@@ -170,7 +192,7 @@ INSERT INTO ${tablename} ( ${selo} )
 		return sql			
 	}
 	
-	def doInsert = { tablename , nullcolumns=[] , clientID=DEFAULT_CLIENT_ID ->
+	def doInsert = { tablename , nullcolumns=[] , clientID=DEFAULT_CLIENT_ID , useSuperUser=false ->
 		println "${CLASSNAME}:doInsert ${tablename} nullcolumns = ${nullcolumns}."
 		if(n_live_tup.get(tablename)==null) {
 			println "${CLASSNAME}:doInsert ${tablename} leer -> nix zu tun."
@@ -205,7 +227,7 @@ INSERT INTO ${tablename} ( ${selo} )
 			deletes = sqlInstance.getUpdateCount()
 			println "${CLASSNAME}:doInsert deletes = ${deletes}."
 				
-			sql = makeInsert(tablename,nullcolumns)
+			sql = makeInsert(tablename,nullcolumns,useSuperUser)
 			println "${sql}"
 			sqlInstance.execute(sql,[clientID])  
 			inserts = sqlInstance.getUpdateCount()

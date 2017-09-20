@@ -299,6 +299,40 @@ ON CONFLICT (${keycolumns[0]})
 		return updates
 	}
 	
+/* TODO test
+
+select * from ad_sequence where lower(name) = 'c_paymentterm'
+
+select ad_sequence_id,name,startno,currentnext,currentnextsys from ad_sequence where lower(name) = 'c_paymentterm'
+
+-- returns currentnext
+select COALESCE( (max(c_paymentterm_id)+1),(select startno from ad_sequence where lower(name) = 'c_paymentterm') )
+from c_paymentterm where c_paymentterm_id>=(select startno from ad_sequence where lower(name) = 'c_paymentterm')
+
+-- returns currentnextsys
+select COALESCE( (max(c_paymentterm_id)+1),50000 )
+from c_paymentterm where c_paymentterm_id>=50000 and c_paymentterm_id<(select startno from ad_sequence where lower(name) = 'c_paymentterm')
+
+select * from c_paymentterm
+
+update ...
+ */
+	def	updateSequence = { tablename ->
+		def sql = """
+UPDATE ad_sequence 
+SET currentnext = (
+		SELECT COALESCE( (MAX(${tablename}_id)+1),(SELECT startno FROM ad_sequence WHERE lower(name) = ?) )
+		FROM ${tablename} WHERE ${tablename}_id>=(SELECT startno FROM ad_sequence WHERE lower(name) = ?)
+) 
+, currentnextsys = (
+		SELECT COALESCE( (max(${tablename}_id)+1),50000 )
+		FROM ${tablename} WHERE ${tablename}_id>=50000 AND ${tablename}_id<(SELECT startno FROM ad_sequence WHERE lower(name) = ?)
+) 
+WHERE lower(name) = ?
+"""
+		return doSql(sql , [tablename,tablename,tablename,tablename])
+	}
+	
 	@Override
 	public Object run() {  // nur Test
 		println "${CLASSNAME}:run"

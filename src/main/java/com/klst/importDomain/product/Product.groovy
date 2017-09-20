@@ -111,6 +111,7 @@ where m_product_id in(select m_product_id from  m_product)
 128;"10000128";"An- oder Abfahrt wegen Hardware"
 
 die prods sind auf mi inaktiv
+
 provisorisch:
 
 INSERT INTO m_product ( m_product_id, ad_client_id, ad_org_id, isactive, created, createdby, updated, updatedby, value, name, description, documentnote, help, upc, sku, c_uom_id, salesrep_id, issummary, isstocked, ispurchased, issold, isbom, isinvoiceprintdetails, ispicklistprintdetails, isverified, c_revenuerecognition_id, m_product_category_id, classification, volume, weight, shelfwidth, shelfheight, shelfdepth, unitsperpallet, c_taxcategory_id, s_resource_id, discontinued, discontinuedby, processing, s_expensetype_id, producttype, imageurl, descriptionurl, guaranteedays, r_mailtext_id, versionno, m_attributeset_id, m_attributesetinstance_id, downloadurl, m_freightcategory_id, m_locator_id, guaranteedaysmin, iswebstorefeatured, isselfservice, c_subscriptiontype_id, isdropship, isexcludeautodelivery, group1, group2, istoformule, lowlevel, unitsperpack ) 
@@ -126,7 +127,8 @@ INSERT INTO m_product ( m_product_id, ad_client_id, ad_org_id, isactive, created
 ,148
 ,128
 ,1000000 )
-
+               auf AD390 c_taxcategory_id numeric(10,0) NOT NULL, das ist OK , aber Steuerkategorie wird in Fenste Produkt nicht angezeigt!!!
+               Ursache: fehlende Übersetzungen  C_TaxCategory_Trl_de_DE.xml 
 
 -- wg. m_product_po
 DELETE FROM m_product_po 

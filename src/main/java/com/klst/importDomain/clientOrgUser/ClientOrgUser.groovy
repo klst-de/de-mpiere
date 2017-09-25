@@ -43,25 +43,25 @@ class ClientOrgUser extends ImportScript {
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		// TODO currentnextsys errechnen
-		done = doSql("update ad_sequence set currentnext = (select max(C_Location_id)+1 from C_Location) where name = 'C_Location'")
+		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "m_warehouse"
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		done = doSql("update ad_sequence set currentnext = (select max(M_Warehouse_id)+1 from M_Warehouse) where name = 'M_Warehouse'")
+		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "c_jobcategory"
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-
+		done = updateSequence(TABLENAME)
+		
 		TABLENAME = "c_job"
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		done = doSql("update ad_sequence set currentnext = (select max(C_Job_id)+1 from C_Job) where name = 'C_Job'")
+		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "c_greeting"
 		rows = n_live_tup[TABLENAME]
@@ -69,8 +69,7 @@ class ClientOrgUser extends ImportScript {
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		// TODO currentnextsys errechnen
-		done = doSql("update ad_sequence set currentnext = (select max(C_Greeting_id)+1 from C_Greeting) where name = 'C_Greeting'")
+		done = updateSequence(TABLENAME)
 
 		TABLENAME = "ad_user"
 		rows = n_live_tup[TABLENAME]
@@ -85,13 +84,10 @@ SET c_bpartner_location_id = ( SELECT c_bpartner_location_id FROM mierp001.ad_us
 WHERE o.ad_client_id=1000000
  */
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		// TODO currentnextsys errechnen
-		done = doSql("update ad_sequence set currentnext = (select max(AD_User_id)+1 from AD_User) where name = 'AD_User'")
-// ----------------- statt doInsert: wg. der leeren menues
-/*
---DELETE FROM ad_role 
---     WHERE ad_client_id=?
---
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "ad_role"
+		def ad_role_insert_sql = """
 INSERT INTO ad_role ( ad_role_id, ad_client_id, ad_org_id, isactive, created, createdby, updated, name, updatedby, 
                       description, userlevel, c_currency_id, amtapproval, ad_tree_menu_id, 
                       ismanual, isshowacct, ispersonallock, ispersonalaccess, iscanexport, iscanreport, supervisor_id, iscanapproveowndoc, isaccessallorgs, ischangelog, preferencetype, overwritepricelimit, isuseuserorgaccess, ad_tree_org_id, 
@@ -101,24 +97,22 @@ INSERT INTO ad_role ( ad_role_id, ad_client_id, ad_org_id, isactive, created, cr
                       m.ismanual, m.isshowacct, m.ispersonallock, m.ispersonalaccess, m.iscanexport, m.iscanreport, m.supervisor_id, m.iscanapproveowndoc, m.isaccessallorgs, m.ischangelog, m.preferencetype, m.overwritepricelimit, m.isuseuserorgaccess, m.ad_tree_org_id, 
                       m.confirmqueryrecords, m.maxqueryrecords, m.connectionprofile, m.allow_info_account, m.allow_info_asset, m.allow_info_bpartner, m.allow_info_cashjournal, m.allow_info_inout, m.allow_info_invoice, m.allow_info_order, m.allow_info_payment, m.allow_info_product, m.allow_info_resource, m.allow_info_schedule, m.userdiscount, m.allow_info_mrp, m.allow_info_crp, m.isdiscountuptolimitprice, m.isdiscountallowedontotal 
        from mierp001.ad_role AS m
---     WHERE m.ad_client_id=?
 WHERE m.ad_role_id in( 1000004 , 1000003 , 1000002 )
+"""
+		done = doSql(ad_role_insert_sql)
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "ad_user_roles"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true) 
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		
+		TABLENAME = "ad_role_orgaccess"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 
-
- */
-//		done = doSql("update ad_sequence set currentnext = (select max(AD_Role_id)+1 from AD_Role) where name = 'AD_Role'")
-//		
-//		TABLENAME = "ad_user_roles"
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true) 
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		
-//		TABLENAME = "ad_role_orgaccess"
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-
-		// isloginuser -- muss sein wg. login TODO
+		// isloginuser + value -- muss sein wg. login
 		done = doSql("UPDATE ad_user SET isloginuser='Y' , value=name WHERE ad_client_id=? AND password is not null",[DEFAULT_CLIENT_ID])
 		
 		return null;

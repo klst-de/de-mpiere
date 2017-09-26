@@ -115,6 +115,21 @@ WHERE m.ad_role_id in( 1000004 , 1000003 , 1000002 )
 		// isloginuser + value -- muss sein wg. login
 		done = doSql("UPDATE ad_user SET isloginuser='Y' , value=name WHERE ad_client_id=? AND password is not null",[DEFAULT_CLIENT_ID])
 		
+		// update  createdby  updatedby
+		def c_location_update_sql = """
+UPDATE c_location o
+SET createdby = ( SELECT m.createdby FROM mierp001.c_location m WHERE o.c_location_id=m.c_location_id )
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(c_location_update_sql)
+		
+		c_location_update_sql = """
+UPDATE c_location o
+SET updatedby = ( SELECT m.updatedby FROM mierp001.c_location m WHERE o.c_location_id=m.c_location_id )
+WHERE o.ad_client_id=1000000		
+"""
+		done = doSql(c_location_update_sql)
+
 		return null;
 	}
 

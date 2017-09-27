@@ -65,25 +65,46 @@ class BusinessPartner extends ImportScript {
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 
-/*  TODO nachholen:
- UPDATE ad_user o
+		def ad_user_update_sql = """
+UPDATE ad_user o
  SET c_bpartner_id = ( SELECT c_bpartner_id FROM mierp001.ad_user m WHERE o.ad_user_id=m.ad_user_id )
- WHERE o.ad_client_id=1000000
- --
- UPDATE ad_user o
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
  SET c_bpartner_location_id = ( SELECT c_bpartner_location_id FROM mierp001.ad_user m WHERE o.ad_user_id=m.ad_user_id )
- WHERE o.ad_client_id=1000000
-  */
-		 
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET createdby = ( SELECT m.createdby FROM mierp001.ad_user m WHERE o.ad_user_id=m.ad_user_id )
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET updatedby = ( SELECT m.updatedby FROM mierp001.ad_user m WHERE o.ad_user_id=m.ad_user_id )
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(ad_user_update_sql)
+		
 		TABLENAME = "c_bp_relation" // c_bp_relation.name character varying(60) NOT NULL >>> muss auf 255
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME) 
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
   
-		TABLENAME = "c_bank"  // TODO die bankdaten sind in mi nicht aktuell, kein swiftcode - die von mf sind besser (ABER ob sie mit mi matchen?)  
+		TABLENAME = "c_bank"  // die bankdaten sind in mi nicht aktuell, kein swiftcode - die von mf sind besser (ABER ob sie mit mi matchen?)
+		                      // Überprüft: die matchenden recs haben keinen swiftcode bei mf, ==>  mf daten sind gar nicht besser
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME) 
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = doInsert(TABLENAME,[],SYSTEM_CLIENT_ID,true)  // viele bankdaten sind unter SYSTEM_CLIENT 
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
@@ -93,6 +114,7 @@ class BusinessPartner extends ImportScript {
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
+		// Schlüssel (c_bank_id)=(9916489) ist nicht in Tabelle »c_bank« vorhanden.
 		TABLENAME = "c_bp_bankaccount"  
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME) 

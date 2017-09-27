@@ -49,13 +49,17 @@ group by 1
     100;26542
     101;21
     102;12
-           -- TODO einfügen
+           -- einfügen:
  540002;2       
  540003;3636
 1000000;1
 1000004;1 
 
  */
+		def done = 0
+		def TABLENAME = "c_uom"
+		def rows = n_live_tup[TABLENAME] 
+		
 		def sql = """
  		INSERT INTO c_uom ( c_uom_id, ad_client_id, ad_org_id, isactive, created, updated, createdby, updatedby, x12de355, uomsymbol, name, description, stdprecision, costingprecision, isdefault, uomtype ) 
     select m.c_uom_id, m.ad_client_id, m.ad_org_id, m.isactive, m.created, m.updated, m.createdby, m.updatedby, m.x12de355, m.uomsymbol, m.name, m.description, m.stdprecision, m.costingprecision, m.isdefault, m.uomtype 
@@ -64,9 +68,6 @@ group by 1
        AND c_uom_id in(540002,540003,1000000,1000004)
 """
 		done = doSql(sql,[SYSTEM_CLIENT_ID])
-		def TABLENAME = "c_uom"
-		def rows = n_live_tup[TABLENAME] 
-		def done = 0
 		done = doInsert(TABLENAME) 
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
@@ -202,7 +203,25 @@ INSERT INTO m_product_po ( m_product_id, c_bpartner_id, ad_client_id, ad_org_id,
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
-				
+		
+		TABLENAME = "m_shipper"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
+		TABLENAME = "m_freightcategory"  
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "m_freight"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
 		return null;
 	}
 

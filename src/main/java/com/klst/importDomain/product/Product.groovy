@@ -163,7 +163,16 @@ INSERT INTO m_product_po ( m_product_id, c_bpartner_id, ad_client_id, ad_org_id,
 //		done = doInsert(TABLENAME)
 //		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
-
+		
+		// das ist ein Überbleibsel aus einer früherren SOE-Datenübernahme, bzw ? m_locator_id 
+		sql = """
+UPDATE m_product
+   SET classification = null
+     , m_locator_id   = null
+WHERE ad_client_id=1000000
+"""
+		done = doSql(sql)
+		
 //		TABLENAME = "m_product_po"
 //		rows = n_live_tup[TABLENAME]
 //		done = doInsert(TABLENAME)

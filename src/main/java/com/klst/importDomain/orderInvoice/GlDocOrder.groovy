@@ -191,70 +191,77 @@ UPDATE gl_category o
  SET created = ( SELECT created FROM mierp001.gl_category m WHERE o.gl_category_id=m.gl_category_id )
 WHERE o.ad_client_id=? AND o.gl_category_id in( SELECT gl_category_id FROM mierp001.gl_category )
 """
-//		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
-//		
-//		update_sql = """
-//UPDATE gl_category o
-// SET updated = ( SELECT updated FROM mierp001.gl_category m WHERE o.gl_category_id=m.gl_category_id )
-//WHERE o.ad_client_id=? AND o.gl_category_id in( SELECT gl_category_id FROM mierp001.gl_category )
-//"""
-//		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
-//		
-//		update_sql = """
-//UPDATE gl_category o
-// SET description = ( SELECT 'imported' FROM mierp001.gl_category m WHERE o.gl_category_id=m.gl_category_id )
-//WHERE o.ad_client_id=? AND o.gl_category_id in( SELECT gl_category_id FROM mierp001.gl_category )
-//"""
-//		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
+		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
+		
+		update_sql = """
+UPDATE gl_category o
+ SET updated = ( SELECT updated FROM mierp001.gl_category m WHERE o.gl_category_id=m.gl_category_id )
+WHERE o.ad_client_id=? AND o.gl_category_id in( SELECT gl_category_id FROM mierp001.gl_category )
+"""
+		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
+		
+		update_sql = """
+UPDATE gl_category o
+ SET description = ( SELECT 'imported' FROM mierp001.gl_category m WHERE o.gl_category_id=m.gl_category_id )
+WHERE o.ad_client_id=? AND o.gl_category_id in( SELECT gl_category_id FROM mierp001.gl_category )
+"""
+		done = doSql(update_sql,[DEFAULT_CLIENT_ID])
 
 		// c_doctype_id's tauschen
-//		TABLENAME = "c_doctype"   
-//		rows = n_live_tup[TABLENAME]
-//		update_sql = """
-//UPDATE ${TABLENAME} SET c_doctype_id=     -2 WHERE ad_client_id=1000000 AND c_doctype_id=1000033;
-//UPDATE ${TABLENAME} SET c_doctype_id=1000033 WHERE ad_client_id=1000000 AND c_doctype_id=1000039;
-//UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_doctype_id=     -2;
-//"""
-//		done = doSql(update_sql)
-//
-//		done = doctypes()
+		TABLENAME = "c_doctype"   
+		rows = n_live_tup[TABLENAME]
+		update_sql = """
+UPDATE ${TABLENAME} SET c_doctype_id=     -2 WHERE ad_client_id=1000000 AND c_doctype_id=1000033;
+UPDATE ${TABLENAME} SET c_doctype_id=1000033 WHERE ad_client_id=1000000 AND c_doctype_id=1000039;
+UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_doctype_id=     -2;
+"""
+		done = doSql(update_sql)
+
+		done = doctypes()
 		// TODO ad_printformat
-//
-//		TABLENAME = "c_activity"   
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-//		
-//		TABLENAME = "c_campaign"   
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-//		
-//		TABLENAME = "c_charge"   
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-//		
-//		TABLENAME = "c_conversiontype"  // leer 
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-//		
-//		TABLENAME = "c_project"   
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-		
-		TABLENAME = "c_order"  // description character varying(255), >>> muss auf 1024   
+
+		TABLENAME = "c_activity"   
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_campaign"   
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_charge"   
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_conversiontype"  // leer 
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_project"   
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_order"  // description character varying(255), >>> muss auf 1024   
+		// FEHLER: NULL-Wert in Spalte »m_pricelist_id« verletzt Not-Null-Constraint , Korrektur hier
+		update_sql = """
+UPDATE ${DEFAULT_FROM_SCHEMA}.${TABLENAME} SET m_pricelist_id=1000001 WHERE c_order_id=1021712;
+"""
+		done = doSql(update_sql)
+		rows = n_live_tup[TABLENAME]
+		// zwei cols vorerst auf null
+		done = doInsert(TABLENAME,["c_cashline_id","c_payment_id"])
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		// Test: Frachtkostenberechnung/freightcostrule wird nicht angezeigt : ist aber mandatory und in DB vorhanden?!
 		
 		return null;
 	}

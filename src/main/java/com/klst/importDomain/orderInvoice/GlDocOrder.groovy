@@ -331,8 +331,20 @@ and ref_orderline_id not in(select c_orderline_id from mierp001.c_orderline) -- 
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 
-// TODO "c_cashline_id","c_payment_id" in "c_invoice" nachholen
-
+		def sql = """
+UPDATE c_invoice o
+SET c_payment_id = ( SELECT m.c_payment_id FROM mierp001.c_invoice m WHERE o.c_invoice_id=m.c_invoice_id )
+WHERE o.ad_client_id=1000000
+"""
+		done = doSql(sql)
+		
+		sql = """
+UPDATE c_invoice o
+SET c_cashline_id = ( SELECT m.c_cashline_id FROM mierp001.c_invoice m WHERE o.c_invoice_id=m.c_invoice_id )
+WHERE o.ad_client_id=1000000
+"""
+				done = doSql(sql)
+		
 		return null;
 	}
 

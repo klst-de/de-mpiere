@@ -19,7 +19,7 @@ class CleanserScript extends Script {
 	public CleanserScript(Binding binding) {
 		super(binding);
 		println "${CLASSNAME}:ctor binding"
-		def db = [url:'jdbc:postgresql://localhost/adempiere_390lts', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
+		def db = [url:'jdbc:postgresql://localhost/mierp001', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
 		try {
 			sqlInstance = Sql.newInstance(db.url, db.user, db.password, db.driver)
 		} catch (Exception e) {
@@ -80,9 +80,11 @@ where ${keycolumn} = ?
 		}
 		def deleted = 0
 		def except = 0
+		def i = 0
 		ids.each { id ->
 			try {
-				println "${CLASSNAME}:tryToDelete try to delete id ${id}, deleted=${deleted}"
+				i++
+				println "${CLASSNAME}:tryToDelete try to delete id ${id}, deleted=${deleted} ${i}/${ids.size}"
 				sqlInstance.execute(sql,[id])
 				deleted = deleted + sqlInstance.getUpdateCount()
 			} catch (SQLException e) {
@@ -99,11 +101,35 @@ where ${keycolumn} = ?
 	def deleteInactive = { ids , tablename , keycolumn=[] ->
 		return tryToDelete(ids, tablename, keycolumn) // damit werden nur die recs gelöscht, die isactive = 'N' haben
 	}
-		
+	
+	// Returns:true if the first result is a ResultSet object; or an update count
+	def doSql = { sql , param=[] ->
+		def current = sqlInstance.connection.autoCommit = false
+		def res
+		try {
+			def isResultSet = sqlInstance.execute(sql,param)
+			if(isResultSet) {
+				println "${CLASSNAME}:doSql isQuery : ${sql}"
+				res = isResultSet // true
+			} else {
+				res = sqlInstance.getUpdateCount()
+				println "${CLASSNAME}:doSql updates = ${res} : ${sql} param =  ${param}"
+				sqlInstance.commit();
+			}
+		}catch(SQLException ex) {
+			println "${CLASSNAME}:doSql ${ex}"
+			sqlInstance.rollback()
+			println "${CLASSNAME}:doSql Transaction rollback."
+		}
+		sqlInstance.connection.autoCommit = current
+		return res
+	}
+	
+
 	@Override
 	public Object run() {
-		println "${CLASSNAME}:run"
-		// TODO
+		println "${CLASSNAME}:run connected to ${sqlInstance.getConnection().metaData.URL}"
+		 
 		return this;
 	}
 

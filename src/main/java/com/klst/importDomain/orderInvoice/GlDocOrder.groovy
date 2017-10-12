@@ -261,8 +261,78 @@ UPDATE ${DEFAULT_FROM_SCHEMA}.${TABLENAME} SET m_pricelist_id=1000001 WHERE c_or
 		done = doInsert(TABLENAME,["c_cashline_id","c_payment_id"])
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
-		// Test: Frachtkostenberechnung/freightcostrule wird nicht angezeigt : ist aber mandatory und in DB vorhanden?!
+		// TODO Test: Frachtkostenberechnung/freightcostrule wird nicht angezeigt : ist mandatory und in DB vorhanden?!
+/*
+Okt 10, 2017 9:53:42 PM groovy.sql.Sql commit
+WARNUNG: Caught exception committing connection: FEHLER: Einfügen oder Aktualisieren in Tabelle »c_orderline« verletzt Fremdschlüssel-Constraint »corderline_ref«
+  Detail: Schlüssel (ref_orderline_id)=(1000734) ist nicht in Tabelle »c_orderline« vorhanden.
+
+select * from mierp001.c_orderline where ref_orderline_id is not null -- 8295
+and ref_orderline_id not in(select c_orderline_id from mierp001.c_orderline) -- 8037 mit ==> 258 ohne
+
+ */
+		TABLENAME = "c_orderline"  // description character varying(255), >>> muss auf 1024
+		rows = n_live_tup[TABLENAME]
+		// TODO ca 250 ref_orderline_id haben keinen c_orderline_id , -- 8295 muss man einzeln nacharbeiten
+		done = doInsert(TABLENAME,["m_attributesetinstance_id","ref_orderline_id"]) // m_attributesetinstance wird nicht importiert
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
+		TABLENAME = "c_ordertax" 
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME) 
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+
+		TABLENAME = "c_invoice" 
+		rows = n_live_tup[TABLENAME]
+		// zwei cols vorerst auf null
+		done = doInsert(TABLENAME,["c_cashline_id","c_payment_id"])
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
+		TABLENAME = "m_inout" 
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
 		
+		TABLENAME = "m_inoutline"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME,["m_attributesetinstance_id"]) // m_attributesetinstance wird nicht importiert
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
+		TABLENAME = "c_invoiceline" 
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME,["m_attributesetinstance_id"]) // m_attributesetinstance wird nicht importiert
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_invoicetax"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME) 
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		
+		TABLENAME = "c_cash"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_cashline"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		TABLENAME = "c_payment"
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+
+// TODO "c_cashline_id","c_payment_id" in "c_invoice" nachholen
+
 		return null;
 	}
 

@@ -134,33 +134,6 @@ class OPOStoPayments extends Script {
 		}
 	}
 
-//	def isErloesKto = { it ->
-//		return it==8400 ||it==8300 ||it==8120 ||it==8125 ||it==8315 ||it==8310 ||it=='div.'
-//	}
-	def getAusgangsrechnung = { kto , rec , dat , soll , haben , gegen=null ->
-		def res = [:]
-		res.kto = new DecimalFormat("#####").format(kto) // Pers.Kto
-		res.dat = dat
-		res.pay = 0  // accumulierte paymants
-		def recList = []
-		def rech = [:]
-		if(gegen==null || Allocations.isErloesKto(gegen)) {
-			rech.rec = new DecimalFormat("#######").format(rec)
-			rech.amt = soll!=null ? soll : 0 - haben
-			rech.dat = dat
-			recList.add(rech)
-		} else {
-			addMsg("${CLASSNAME}:getAusgangsrechnung BP ${kto} Re ${rec} ist keine Rechnung, wg gegenkto ${gegen}")
-			res.amt = 0
-			if(gegen==1200) { // Bank
-				res.Bank = haben
-			}
-			res.pay = haben!=null ? haben : 0 - soll
-		}
-		res.recs = recList
-		return res
-	}
-	
 	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
 		if(it==null) {
 			return null
@@ -189,30 +162,11 @@ class OPOStoPayments extends Script {
 		return range.Item(row,col).Value
 	}
 	
-	def checkRechnung = {gegenkto , ausgl , kto , rec ->
-		if(ausgl=='A') {
-			if(Allocations.isErloesKto(gegenkto)) {
-				return true
-			} else {
-				return false
-			}				
-		} else {
-			def a = mapAusgl.get(ausgl)
-			addMsg("${CLASSNAME}:checkRechnung Ausgleich ${a} für BP ${kto} Re ${rec}")
-		}
-		if(rec<20000 || rec>99999) { // keine Rechnung, Gutschrift oder was anderes
-			addMsg("${CLASSNAME}:checkRechnung keine Rechnung BP ${kto} Re ${rec}")
-			return false
-		}
-		return true
-	} 
-	
 	def getOpos = { sheet , orderList ->
 		println "${CLASSNAME}:getOpos UsedRange Rows=${sheet.UsedRange.Rows.Count} Columns=${sheet.UsedRange.Columns.Count}"
 		if(sheet.UsedRange.Rows.Count>1 && sheet.UsedRange.Columns.Count==ANSRECHPARTNER) {
 			// OK
 		} else {
-//			println "${CLASSNAME}:getOrders UsedRange check faild: Rows=${sheet.UsedRange.Rows.Count}/expected>1 Columns=${sheet.UsedRange.Columns.Count}/expected=${ANSRECHPARTNER}"
 			throw new Exception("UsedRange check faild: Rows=${sheet.UsedRange.Rows.Count}/expected>1 Columns=${sheet.UsedRange.Columns.Count}/expected=${ANSRECHPARTNER}")
 		}
 		def range = sheet.UsedRange
@@ -239,93 +193,45 @@ class OPOStoPayments extends Script {
 				println "${CLASSNAME}:getOpos eof"
 				return
 			}
-//			if(kto>69999) { // 69999 : max Debitor
-//				addMsg("${CLASSNAME}:getOpos ENDE Debitoren")
-//				return
-//			}
 			if(kto==null) {
 				kto = lastKto
 				if(lastRec==rec) { // gleiche Rechnung
-//					if(gegenkto==1200) { // Bank
-//						rechnung.Bank = haben
-//						rechnung.pay = rechnung.pay + (haben==null ? 0 : haben) - (soll==null ? 0 : soll)
-//					} else if(gegenkto==8736) {  // Skonto
-//						rechnung.Skonto = haben
-//						rechnung.pay = rechnung.pay + (haben==null ? 0 : haben) - (soll==null ? 0 : soll)
-//					} else if(gegenkto=="div.") {
-//						rechnung.div = haben
-//						rechnung.pay = rechnung.pay + (haben==null ? 0 : haben) - (soll==null ? 0 : soll)
-//					} else {
-//						addMsg("${CLASSNAME}:getOpos seltsames gegenkto ${gegenkto} bei BP=${rechnung.kto}")
-//						rechnung.pay = rechnung.pay + (haben==null ? 0 : haben) - (soll==null ? 0 : soll)
-//					}
 					def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
 					println "${CLASSNAME}:getOpos payment=${payment}"
 					alloc.addPayment(payment)
 				} else { // neue Rechnung des gleichen BP
-//					// TODO hole Re, CHECK Datum+Soll? 
-//					if(checkRechnung(gegenkto,ausgl,kto,rec)) {
-//						rechnung = getAusgangsrechnung(kto,rec,buchdat,soll,haben)
-//					} else {
-//						if(rec>99999) { // keine Rechnung, sondern Gutschrift
-//							rechnung.pay = rechnung.pay + haben
-//						} else {
-//							addMsg("checkRechnung faild: 'Konto'='${kto}' , 'Rechnungs-Nr.'='${rec}'")
-//							rechnung = getAusgangsrechnung(kto,rec,buchdat,soll,haben)
-//						}
-//					}
 					def invoice = alloc.makeInvoice(rec,buchdat,soll,haben)
-					println "${CLASSNAME}:getOpos saldo=${saldo} invoice=${invoice}"
-					if(saldo==null) {
+					println "${CLASSNAME}:getOpos neue Rechnung des gleichen BP saldo=${saldo} rec=${rec} ausgl='${ausgl}' "
+					if(saldo==null) { // ein neuer OPOS - der alte muss ausbalanciert sein
+						assert alloc.isBalanced()
 						// TODO alloc in AD anlegen
 						alloc = new Allocations()
 						alloc.setDebitor(kto)
 					} else {
 						// 
-						println "${CLASSNAME}:getOpos saldo=${alloc.getSaldo()}"
+						println "${CLASSNAME}:getOpos saldo=${saldo} == ${alloc.getSaldo()}"
 					}
 					alloc.addInvoice(invoice)
-					println "${CLASSNAME}:getOpos alloc=${alloc.kto} ${alloc.invoiceList} ${alloc.paymentList}"
+					println "${CLASSNAME}:getOpos BP=${alloc.kto} ${alloc.invoiceList} ${alloc.paymentList}"
 				}
 			} else { // neues Konto/BP
-//				if(checkRechnung(gegenkto,ausgl,kto,rec)) {
-//					println ""
-//					rechnung = getAusgangsrechnung(kto,rec,buchdat,soll,haben)
-//				} else {
-////					throw new Exception("checkRechnung faild: 'Konto'='${kto}' , 'Rechnungs-Nr.'='${rec}'")
-//					addMsg("checkRechnung faild: 'Konto'='${kto}' , 'Rechnungs-Nr.'='${rec}'")
-//					rechnung = getAusgangsrechnung(kto,rec,buchdat,soll,haben,gegenkto)
-//				}
 				alloc = new Allocations()
 				alloc.setDebitor(kto)
+				println "${CLASSNAME}:getOpos neues Konto/BP=${alloc.kto} ausgl='${ausgl}' BESCHRIFTUNG=${getValue(range,r,BESCHRIFTUNG)} "
 				try {
 					def invoice = alloc.makeInvoice(rec,buchdat,soll,haben,gegenkto)
-					println "${CLASSNAME}:getOpos invoice=${invoice} ${getValue(range,r,BESCHRIFTUNG)} "
 					alloc.addInvoice(invoice)
 				} catch(Exception e) {
 					println "${CLASSNAME}:getOpos exception=${e.getMessage()}"
 					def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
-					println "${CLASSNAME}:getOpos payment=${payment}"
 					alloc.addPayment(payment)
 				} 
-				println "${CLASSNAME}:getOpos alloc=${alloc.kto} invoices=${alloc.invoiceList} ${alloc.paymentList}"
+				println "${CLASSNAME}:getOpos BP=${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
 			}
 			
-//			println "${CLASSNAME}:getOpos ${kto} an ${gegenkto} re:${rechnung} ${buchdat} ${getValue(range,r,BESCHRIFTUNG)} ${saldo}"
-			if(saldo==0) {
-//				BigDecimal mySaldo = new BigDecimal(0)
-//				rechnung.recs.each{
-//					mySaldo = mySaldo.add(it.amt)
-//				}
-//				if(mySaldo.subtract(rechnung.pay).abs()>=0.005) {
-//					println "${CLASSNAME}:getOpos mySaldo=${mySaldo.subtract(rechnung.pay)}"
-//				} else {
-//					println "${CLASSNAME}:getOpos OK"
-//				}
+			if(saldo!=null) {
 				if(alloc.isBalanced()) {
 					println "${CLASSNAME}:getOpos isBalanced"
-				} else {
-					println "${CLASSNAME}:getOpos ??? ${alloc.getSaldo()} ${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
 				}
 			}
 			lastKto = kto

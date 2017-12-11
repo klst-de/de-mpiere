@@ -134,44 +134,16 @@ class OPOStoPayments extends Script {
 		}
 	}
 
-	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
-		if(it==null) {
-			return null
-		}
-		return new java.sql.Timestamp(it.getTime())
-	}
-	// columns
-	private static final KONTO          = 2 // pers.Kto
-	private static final BESCHRIFTUNG   = 3 // kto
-	private static final RECHNUNGSNR    = 4
-	private static final BUCHDAT        = 5 // java.util.Date
-	private static final FAELLIGDAT     = 6 // java.util.Date or null
-	private static final SOLL           = 7
-	private static final HABEN          = 8
-	private static final SALDO          = 9
-	private static final SHSALDO        =10 // S H
-	private static final GEGENKTO       =11
-	private static final RAFFUNG        =12 // wenn R => GEGENKTO = div.
-	private static final FAELLIG        =13
-	private static final AUSGLAMN       =14 // M: manuell , A: automatisch , N: KonteNnullsaldenlauf
-	def mapAusgl = ["M":"manuell","A":"automatisch","N":"via KonteNnullsaldenlauf"]
-	// ...
-	private static final ANSRECHPARTNER =43 // last col
-	
-	def getValue = { range, row , col->
-		return range.Item(row,col).Value
-	}
-	
 	def getOpos = { sheet ->
 		println "${CLASSNAME}:getOpos UsedRange Rows=${sheet.UsedRange.Rows.Count} Columns=${sheet.UsedRange.Columns.Count}"
-		if(sheet.UsedRange.Rows.Count>1 && sheet.UsedRange.Columns.Count==ANSRECHPARTNER) {
+		if(sheet.UsedRange.Rows.Count>1 && sheet.UsedRange.Columns.Count==Opos.ANSRECHPARTNER) {
 			// OK
 		} else {
 			throw new Exception("UsedRange check faild: Rows=${sheet.UsedRange.Rows.Count}/expected>1 Columns=${sheet.UsedRange.Columns.Count}/expected=${ANSRECHPARTNER}")
 		}
 		def range = sheet.UsedRange
-		def lastKto = range.Item(2,KONTO).Value
-		def lastRec = range.Item(2,RECHNUNGSNR).Value
+		def lastKto = range.Item(2,Opos.KONTO).Value
+		def lastRec = range.Item(2,Opos.RECHNUNGSNR).Value
 		println "${CLASSNAME}:getOpos Konto=${lastKto} Rechnungs-Nr.=${lastRec}"
 		if("Konto"==lastKto && "Rechnungs-Nr."==lastRec) {
 			// OK
@@ -179,16 +151,13 @@ class OPOStoPayments extends Script {
 			throw new Exception("Row 2 check faild: expected 'Konto'='${lastKto}' AND 'Rechnungs-Nr.'='${lastRec}'")
 		}
 		Allocations alloc = null
+		Opos opos = new Opos(range)
 		for( r=3; r<=range.Rows.Count; r++) {
-			def kto = range.Item(r, KONTO).Value
-			def rec = range.Item(r, RECHNUNGSNR).Value
-			def gegenkto = range.Item(r, GEGENKTO).Value
-			def soll = range.Item(r, SOLL).Value
-			def haben = range.Item(r, HABEN).Value
-			def saldo = range.Item(r, SALDO).Value
-			def ausgl = range.Item(r, AUSGLAMN).Value
-			def buchdat = toTimestamp(range.Item(r,BUCHDAT).Value)
-			if(buchdat==null) { // darf nicht passeiern, eof
+			def kto = range.Item(r, Opos.KONTO).Value
+			def rec = range.Item(r, Opos.RECHNUNGSNR).Value
+			def saldo = range.Item(r, Opos.SALDO).Value
+			def ausgl = range.Item(r, Opos.AUSGLAMN).Value
+			if(opos.getValue(r,Opos.BUCHDAT)==null) { // darf nicht passeiern, eof
 				println "${CLASSNAME}:getOpos eof"
 				return
 			}
@@ -196,9 +165,7 @@ class OPOStoPayments extends Script {
 				kto = lastKto
 				if(alloc.isDebitor()) {
 					if(lastRec==rec) { // gleiche Ausgangsrechnung
-						def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
-						//println "${CLASSNAME}:getOpos payment=${payment}"
-						alloc.addPayment(payment)
+						alloc.addPayment(opos.makePayment(kto,r))
 					} else { // neue Rechnung des gleichen BP
 						if(saldo==null) { // ein neuer OPOS - der alte muss ausbalanciert sein
 							println "${CLASSNAME}:getOpos balanced? BP=${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
@@ -207,24 +174,22 @@ class OPOStoPayments extends Script {
 							alloc = new Allocations()
 							alloc.setDebitor(kto)
 						} else {
-							//
 							println "${CLASSNAME}:getOpos NOT BALANCED saldo=${saldo} == ${alloc.getSaldo()}"
 						}
-						def invoice = alloc.makeInvoice(rec,buchdat,soll,haben)
-						println "${CLASSNAME}:getOpos neue Rechnung des gleichen BP saldo=${saldo} rec=${rec} ausgl='${ausgl}' "
-						alloc.addInvoice(invoice)
-						println "${CLASSNAME}:getOpos BP=${alloc.kto} ${alloc.invoiceList} ${alloc.paymentList}"
+						try {
+							alloc.addInvoice(opos.makeInvoice(kto,r))
+							println "${CLASSNAME}:getOpos neue Rechnung des gleichen BP saldo=${saldo} rec=${rec} ausgl='${ausgl}' "
+						} catch(Exception e) {
+							println "${CLASSNAME}:getOpos exception=${e.getMessage()} versuche payment..."
+							alloc.addPayment(opos.makePayment(kto,r))
+						} 
 					}
 				} else { // bei Lieferanten
 					if(lastRec==rec) { // gleiche Eingangsrechnung
 						try {
-							def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
-							//println "${CLASSNAME}:getOpos payment=${payment}"
-							alloc.addPayment(payment)
+							alloc.addPayment(opos.makePayment(kto,r))
 						} catch(Exception e) {
-							//println "${CLASSNAME}:getOpos ${e.getMessage()}"
-							def invoice = alloc.makeInvoice(rec,buchdat,soll,haben,gegenkto)
-							alloc.addInvoice(invoice)
+							alloc.addInvoice(opos.makeInvoice(kto,r))
 						}
 					} else { // neue Rechnung des gleichen Lieferanten
 						if(saldo==null) { // ein neuer OPOS - der alte muss ausbalanciert sein
@@ -234,17 +199,12 @@ class OPOStoPayments extends Script {
 							alloc = new Allocations()
 							alloc.setCreditor(kto)
 						} else {
-							//
 							println "${CLASSNAME}:getOpos NOT BALANCED saldo=${saldo} == ${alloc.getSaldo()}"
 						}
 						try {
-							def invoice = alloc.makeInvoice(rec,buchdat,soll,haben,gegenkto)
-							//println "${CLASSNAME}:getOpos makeInvoice invoice=${invoice}"
-							alloc.addInvoice(invoice)
+							alloc.addInvoice(opos.makeInvoice(kto,r))
 						} catch(Exception e) {
-							//println "${CLASSNAME}:getOpos exception=${e.getMessage()} versuche payment..."
-							def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
-							alloc.addPayment(payment)
+							alloc.addPayment(opos.makePayment(kto,r))
 						} 
 //						println "${CLASSNAME}:getOpos BP=${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
 					}
@@ -257,32 +217,21 @@ class OPOStoPayments extends Script {
 					// TODO alloc in AD anlegen
 				}
 				alloc = new Allocations()
+				println "${CLASSNAME}:getOpos neues Konto/BP=${kto} ausgl='${ausgl}' BESCHRIFTUNG=${opos.getValue(r,Opos.BESCHRIFTUNG)} "
 				try {
 					alloc.setDebitor(kto)
-					println "${CLASSNAME}:getOpos neues Konto/BP=${alloc.kto} ausgl='${ausgl}' BESCHRIFTUNG=${getValue(range,r,BESCHRIFTUNG)} "
 				} catch(Exception e) {
 					println "${CLASSNAME}:getOpos ${e.getMessage()} ** Lieferant **"
 					alloc.setCreditor(kto)
-					println "${CLASSNAME}:getOpos neuer Lieferant/BP=${alloc.kto} ausgl='${ausgl}' BESCHRIFTUNG=${getValue(range,r,BESCHRIFTUNG)} "
-					// .... TODO
 				}
 				try {
-					def invoice = alloc.makeInvoice(rec,buchdat,soll,haben,gegenkto)
-					//println "${CLASSNAME}:getOpos makeInvoice invoice=${invoice}"
-					alloc.addInvoice(invoice)
+					alloc.addInvoice(opos.makeInvoice(kto,r))
 				} catch(Exception e) {
 					println "${CLASSNAME}:getOpos exception=${e.getMessage()} - trying payment"
-					def payment = alloc.makePayment(rec,buchdat,soll,haben,gegenkto)
-					alloc.addPayment(payment)
+					alloc.addPayment(opos.makePayment(kto,r))
 				} 
-//				println "${CLASSNAME}:getOpos BP=${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
 			}
 			
-//			if(saldo!=null) {
-//				if(alloc.isBalanced()) {
-//					println "${CLASSNAME}:getOpos isBalanced ${alloc.dump()}"
-//				}
-//			}
 			lastKto = kto
 			lastRec = rec
 		} //for
@@ -319,21 +268,29 @@ class OPOStoPayments extends Script {
 	}
   
 }
-class Allocations extends Script {
+
+class SKR03 extends Script {
 	
 	def CLASSNAME = this.getClass().getName()
 	
-	def kto = null // personenKto
-	def invoiceList = []
-	def paymentList = []
-	
-	public Allocations() {
+	public SKR03() {
 		println "${CLASSNAME}:ctor"
 	}
 
-	public Allocations(Binding binding) {
+	public SKR03(Binding binding) {
 		super(binding);
 		println "${CLASSNAME}:ctor binding"
+	}
+	
+	static final      KTO_FORMAT =  "####"
+	static final PERS_KTO_FORMAT = "#####"
+
+	static def isDebitor = { it ->
+		return it>=10000 && 69999>=it // 10000-69999 : Debitoren/Kunden
+	}
+	
+	static def isCreditor = { it ->
+		return it>=70000 && 99999>=it // 70000-99999 : Kreditoren/Lieferanten
 	}
 
 	//      0970 Sonstige Rückstellungen
@@ -371,48 +328,139 @@ class Allocations extends Script {
 	static def isBank = { it ->
 		return (it>=1100 && it<=1130) || (it>=1200 && it<=1250) // Postbank || Bank 
 	}
-
-	def makeInvoice = { rec , dat , soll , haben , gegen=null ->
-//		println "${CLASSNAME}:makeInvoice rec=${rec} this.kto=${this.kto} gegen=${gegen}"
-		def invoice = [:]
-		if(isDebitor()) { // Ausgangsrechnungen : das Gegenkoto muss ein ErlösKto sein
-			if(gegen==null || isErloesKto(gegen)) {
-				invoice.rec = new DecimalFormat("#######").format(rec)
-				invoice.amt = soll!=null ? soll : 0 - haben
-				invoice.dat = dat
-			} else {
-				throw new Exception("BP ${this.kto} Re ${rec} ist keine Ausgangsrechnung, wg gegenkto ${gegen}")
-			}
-		} else { // Kreditoren/Lieferanten -> Eingangsrechnungen
-			if(gegen==970 || gegen=='div.' || isAufwendung(gegen) || isFremdleistung(gegen)) {
-				invoice.rec = new DecimalFormat("#######").format(rec)
-				invoice.amt = soll!=null ? soll : 0 - haben
-				invoice.dat = dat
-			} else {
-				throw new Exception("BP ${this.kto} Re ${rec} ist keine Einggangsrechnung, wg gegenkto ${gegen}")
-			}
-		}
-		return invoice
+	
+	@Override
+	public Object run() {
+		return null;
 	}
 
-	def makePayment = { rec , dat , soll , haben , gegen ->
-//		println "${CLASSNAME}:makePayment rec=${rec} this.kto=${this.kto} gegen=${gegen}"
-		def payment = [:]
-		if(gegen=="div.") {
-			payment.kto = gegen
-		} else if(isBank(gegen)) {
-			payment.kto = 'Bank'
-		} else if(isSkonto(gegen)) {
-			payment.kto = 'Skonto'
-		} else {
-			throw new Exception("BP ${this.kto} Re ${rec} ist keine Zahlung, wg gegenkto ${gegen}")
-		}
-		payment.rec = new DecimalFormat("#######").format(rec)
-		payment.amt = haben!=null ? haben : 0 - soll
-		payment.dat = dat
-		return payment
+}
+
+class Opos extends Script {
+	
+	def CLASSNAME = this.getClass().getName()
+	
+	static final KONTO          = 2 // pers.Kto
+	static final BESCHRIFTUNG   = 3 // kto
+	static final RECHNUNGSNR    = 4
+	static final BUCHDAT        = 5 // java.util.Date
+	static final FAELLIGDAT     = 6 // java.util.Date or null
+	static final SOLL           = 7
+	static final HABEN          = 8
+	static final SALDO          = 9
+	static final SHSALDO        =10 // S H
+	static final GEGENKTO       =11
+	static final RAFFUNG        =12 // wenn R => GEGENKTO = div.
+	static final FAELLIG        =13
+	static final AUSGLAMN       =14 // M: manuell , A: automatisch , N: KonteNnullsaldenlauf
+	static def mapAusgl = ["M":"manuell","A":"automatisch","N":"via KonteNnullsaldenlauf"]
+	static final BELEGFELD2     =15 // TTMMYY ? Fälligkeit
+	static final KZ             =16
+	static final BUTEXT         =17
+	static final KOST1          =18
+	static final KOST2          =19
+	static final USTVH          =20 // z.B. 19 7 "div."
+	// ...
+	private static final ANSRECHPARTNER =43 // last col
+
+	def range = null
+	def SKR = SKR03
+	
+	public Opos(range) {
+		println "${CLASSNAME}:ctor"
+		this.range = range
+	}
+
+	public Opos(Binding binding) {
+		super(binding)
+		println "${CLASSNAME}:ctor binding"
 	}
 	
+	def getValue = { row , col ->
+		return this.range.Item(row,col).Value
+	}
+	
+	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
+		if(it==null) {
+			return null
+		}
+		return new java.sql.Timestamp(it.getTime())
+	}
+
+	// Aufruf : def invoice = opos.makeInvoice(kto,r)
+	def makeInvoice = { kto, r ->
+		def invoice = [:]
+		def soll = range.Item(r, SOLL).Value
+		def haben = range.Item(r, HABEN).Value
+		invoice.rec = new DecimalFormat("#######").format(rec = range.Item(r, RECHNUNGSNR).Value)
+		invoice.amt = soll!=null ? soll : 0 - haben
+		invoice.kto = range.Item(r, GEGENKTO).Value
+		invoice.dat = toTimestamp(range.Item(r,BUCHDAT).Value)
+		invoice.txt = ""
+		invoice.ust = range.Item(r,USTVH).Value
+		if(SKR03.isDebitor(kto)) { // Ausgangsrechnungen : das Gegenkoto muss ein ErlösKto sein
+			if(SKR.isErloesKto(invoice.kto)) {
+				// OK
+			} else {
+				throw new Exception("BP ${kto} Re ${invoice.rec} ist keine Ausgangsrechnung, wg gegenkto ${invoice.kto}")
+			}
+		} else { // Kreditoren/Lieferanten -> Eingangsrechnungen
+			if(invoice.kto==970 || invoice.kto=='div.' || SKR.isAufwendung(invoice.kto) || SKR.isFremdleistung(invoice.kto)) {
+				invoice.txt = range.Item(r, BUTEXT).Value
+			} else {
+				throw new Exception("BP ${kto} Re ${invoice.rec} ist keine Eingangsrechnung, wg gegenkto ${invoice.kto}")
+			}
+		}
+		println "${CLASSNAME}:makeInvoice ${invoice}"
+		return invoice
+	}
+	
+	// Aufruf : def payment = opos.makePayment(kto,r)
+	def makePayment = { kto, r ->
+		def payment = [:]
+		def soll = range.Item(r, SOLL).Value
+		def haben = range.Item(r, HABEN).Value
+		payment.rec = new DecimalFormat("#######").format(rec = range.Item(r, RECHNUNGSNR).Value)
+		payment.amt = haben!=null ? haben : 0 - soll
+		def gegen = range.Item(r, GEGENKTO).Value
+		payment.dat = toTimestamp(range.Item(r,BUCHDAT).Value)
+		if(gegen=="div.") {
+			payment.kto = gegen
+		} else if(SKR.isBank(gegen)) {
+			payment.kto = 'Bank'
+		} else if(SKR.isSkonto(gegen)) {
+			payment.kto = 'Skonto'
+		} else {
+			throw new Exception("BP ${kto} Re ${payment.rec} ist keine Zahlung, wg gegenkto ${gegen}")
+		}
+		println "${CLASSNAME}:makePayment ${payment}"
+		return payment
+	}
+
+	@Override
+	public Object run() {
+		return null;
+	}
+
+}
+
+class Allocations extends Script {
+	
+	def CLASSNAME = this.getClass().getName()
+	
+	def kto = null // personenKto
+	def invoiceList = []
+	def paymentList = []
+	
+	public Allocations() {
+		println "${CLASSNAME}:ctor"
+	}
+
+	public Allocations(Binding binding) {
+		super(binding);
+		println "${CLASSNAME}:ctor binding"
+	}
+
 	def addInvoice = { it ->
 		invoiceList.add(it)
 	}
@@ -422,24 +470,24 @@ class Allocations extends Script {
 	}
 	
 	def isDebitor = { it=this.kto.toInteger() ->
-		return it>=10000 && 69999>=it // 10000-69999 : Debitoren/Kunden
+		return SKR03.isDebitor(it)
 	}
 	
 	def setDebitor = { it ->
 		if(isDebitor(it)) {
-			this.kto = new DecimalFormat("#####").format(it)
+			this.kto = new DecimalFormat(SKR03.PERS_KTO_FORMAT).format(it)
 		} else {
 			throw new Exception("BP ${it} ist kein Debitor")
 		}
 	}
 	
 	def isCreditor = { it=this.kto.toInteger() ->
-		return it>=70000 && 99999>=it // 70000-99999 : Kreditoren/Lieferanten
+		return SKR03.isCreditor(it)
 	}
 	
 	def setCreditor = { it ->
 		if(isCreditor(it)) {
-			this.kto = new DecimalFormat("#####").format(it)
+			this.kto = new DecimalFormat(SKR03.PERS_KTO_FORMAT).format(it)
 		} else {
 			throw new Exception("BP ${it} ist kein Kreditor")
 		}
@@ -466,9 +514,6 @@ class Allocations extends Script {
 		return null;
 	}
 
-//	static main(args) {
-//	}
-	
 }
 		
 	

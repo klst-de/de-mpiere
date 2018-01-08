@@ -1,8 +1,13 @@
+title: de-mpiere
+# description: ...
+
+# see https://github.com/pages-themes/architect
 theme: jekyll-theme-architect
+
+# to indicate whether to provide a download URL
+show_downloads: "true"
+
+google_analytics:
 
 # src nicht in root:
 # source: _pages
-
-# see https://github.com/pages-themes/architect
-# to indicate whether to provide a download URL]
-show_downloads: "true"

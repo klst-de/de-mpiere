@@ -5,7 +5,7 @@ title: de-mpiere
 theme: jekyll-theme-architect
 
 # to indicate whether to provide a download URL
-show_downloads: "false"
+#show_downloads: "true"
 
 google_analytics:
 

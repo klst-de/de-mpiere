@@ -267,6 +267,22 @@ Okt 10, 2017 9:53:42 PM groovy.sql.Sql commit
 WARNUNG: Caught exception committing connection: FEHLER: Einfügen oder Aktualisieren in Tabelle »c_orderline« verletzt Fremdschlüssel-Constraint »corderline_ref«
   Detail: Schlüssel (ref_orderline_id)=(1000734) ist nicht in Tabelle »c_orderline« vorhanden.
 
+	def getOrderlines = { ->
+		
+		def sql = """
+select c_orderline_id from ${DEFAULT_FROM_SCHEMA}.c_orderline where ref_orderline_id is not null 
+   and ref_orderline_id not in(select c_orderline_id from ${DEFAULT_FROM_SCHEMA}.c_orderline) 
+"""
+		def ids = []
+		sqlInstance.eachRow(sql,[]) { row ->
+			ids.add(row[0])
+		}
+		println "${CLASSNAME}:getOrderlines found ${ids.size()} ids."
+		return ids
+	}
+
+mit den c_orderline_id update von ref_orderline_id versuchen , tryToupdate ähnlich tryToDelete im cleanser
+
 select * from mierp001.c_orderline where ref_orderline_id is not null -- 8295
 and ref_orderline_id not in(select c_orderline_id from mierp001.c_orderline) -- 8037 mit ==> 258 ohne
 

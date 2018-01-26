@@ -29,7 +29,7 @@ class InventoryCleanser extends CleanserScript {
 
 	def inventorylineFrom = """
 from m_inventoryline
-where m_inventoryline_id in( ${subSelect} )
+where m_inventory_id in( ${subSelect} )
 """
 	
 	def inventorylineSelect = """
@@ -60,11 +60,7 @@ SELECT m_inventoryline_id ${inventorylineFrom}
 		println "${CLASSNAME}:run inactiveIDs #${inactiveIDs.size}" 
 		done = tryToDelete(inactiveIDs,TABLENAME)
 		done = doSql("UPDATE ${TABLENAME} SET isactive='Y' ${subSelectWhere}")
-/* ???? seltsam
-com.klst.importDomain.product.InventoryCleanser:doSql org.postgresql.util.PSQLException: FEHLER: Aktualisieren oder Löschen in Tabelle »m_inventoryline« verletzt Fremdschlüssel-Constraint »minventoryline_mcostdetail« von Tabelle »m_costdetail«
-  Detail: Auf Schlüssel (m_inventoryline_id)=(1008481) wird noch aus Tabelle »m_costdetail« verwiesen.
-com.klst.importDomain.product.InventoryCleanser:doSql Transaction rollback.	  
- */
+		
 		return this;
 	}
 

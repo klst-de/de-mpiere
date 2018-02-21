@@ -98,12 +98,6 @@ class PdfExtractor extends Script {
 					println "${CLASSNAME}:isProcess ${para.getParameterName()} ${para.getP_Date()} - ${para.getP_Date_To()}"
 					this.paraDict.put(para.getParameterName(), para.getP_Date()) // getP_Date_To
 					this.paraDict.put("DateTo", para.getP_Date_To())
-				} else if(para.getParameterName()=="DateTo") {
-//					println "${CLASSNAME}:isProcess ${para.getParameterName()} ${para.getP_Date()}"
-//					this.paraDict.put(para.getParameterName(), para.getP_Date())
-//				} else if(para.getParameterName()=="IsSOTrx") {
-//					println "${CLASSNAME}:isProcess ${para.getParameterName()} ${para.getP_String()}"
-//					this.paraDict.put(para.getParameterName(), para.getP_String())
 				} else {
 					this.paraDict.put(para.getParameterName(), para.getP_String())
 					println "${CLASSNAME}:isProcess para ${para.getP_String()}"
@@ -136,26 +130,8 @@ class PdfExtractor extends Script {
 		documentName.append(ext)
 		return documentName.toString()
 	}
-/*
-select ad_archive_id,binarydata from ad_archive where ad_table_id in(select ad_table_id from ad_table where tablename='C_Invoice') -- 318
-and record_id in(select C_Invoice_id from C_Invoice where isactive='Y' and issotrx='Y' and dateinvoiced>'2018-01-01')
-and ad_archive_id=${ad_archive_id}
-
-com.klst.pdf.PdfExtractor:getArchive
-SELECT * FROM ad_archive
-WHERE ad_client_id = 1000000 AND ad_org_id IN( 0 , 1000000 ) AND isactive = 'Y'
-  AND ad_table_id in(select ad_table_id from ad_table where tablename='C_Invoice')
-  AND record_id = ?
- 1:1044146
-com.klst.pdf.PdfExtractor:getArchive MArchive[1002501,Name=23617]
-com.klst.pdf.PdfExtractor:getArchive binaryData.length=68931
-com.klst.pdf.PdfExtractor:getArchive MArchive[1002502,Name=23617]
-com.klst.pdf.PdfExtractor:getArchive binaryData.length=68931
-com.klst.pdf.PdfExtractor:getArchive MArchive[1002519,Name=23617]
-com.klst.pdf.PdfExtractor:getArchive binaryData.length=68931
-c
- */
-	// returns 
+	
+	// returns num of bytes written
 	def getArchive = { File destFile, ad_client_id, ad_org_id, invoice, tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
 		println "${CLASSNAME}:getArchive invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
 		def record_id = invoice.get_ID()
@@ -177,27 +153,21 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 				numArch++
 				obj = MArchive.newInstance(ctx, resultSet, trxName)
 				println "${CLASSNAME}:getArchive ${obj}"
-//				byte[] binaryData = obj.getBinaryData() 
-//				println "${CLASSNAME}:getArchive binaryData.length=${binaryData.length}"
 			}
 		}
 		if(numArch>1) {
-			println "${CLASSNAME}:getArchive ${numArch} Archive gefunden für ${invoice}"
-			addMsg("${numArch} Archive gefunden für ${invoice}")
+			println "${CLASSNAME}:getArchive ${numArch} archives for ${invoice} : got ${obj}"
+			addMsg("${numArch} archives for ${invoice} : got ${obj}")
 		}
 		if(obj==null) {
-			println "${CLASSNAME}:getArchive kein Archive gefunden für ${invoice}"
-			addMsg("kein Archiv gefunden für ${invoice}")
+			println "${CLASSNAME}:getArchive no archive for ${invoice}"
+			addMsg("no archive for ${invoice}")
 			return
 		} else {
 			println "${CLASSNAME}:getArchive ad_archive.Name:${obj.getName()} invoice.DocumentNo:${invoice.getDocumentNo()} status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()}"
-//			println "${CLASSNAME}:getArchive ${makeFilename(invoice.getDocumentNo(),invoice.isCreditMemo(),invoice.getDocStatus())}"
 		}
-		// inflate to pdf
+		
 		byte[] binaryData = obj.getBinaryData()
-//		def filename = makeFilename(invoice.getDocumentNo(), invoice.isCreditMemo(), invoice.getDocStatus())
-//		def m_archivePathRoot = File.separator +"tmp" // TODO param
-//		final File destFile = new File(m_archivePathRoot + File.separator + filename+".pdf")
 		println "${CLASSNAME}:getArchive write to to ${destFile} binaryData.length=${binaryData.length}"
 		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile))
 		bos.write(binaryData)
@@ -205,45 +175,8 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		bos.close()
 		return binaryData.length
 				
-//		byte[] deflatedData = obj.getBinaryData()
-//		println "${CLASSNAME}:getArchive inflate to ${filename} - deflatedData.length=${deflatedData.length}"
-//		byte[] inflatedData = null;
-//		ByteArrayInputStream bais = new ByteArrayInputStream(deflatedData)
-//		ZipInputStream zip = new ZipInputStream(bais)
-//		ZipEntry entry = zip.getNextEntry()
-////		if(entry != null) {
-//			ByteArrayOutputStream out = new ByteArrayOutputStream();
-//			byte[] buffer = new byte[2048];
-//			int length = zip.read(buffer);
-//			while (length != -1) {
-//				out.write(buffer, 0, length);
-//				length = zip.read(buffer);
-//			}
-//			inflatedData = out.toByteArray();
-//			println "${CLASSNAME}:getArchive ${filename} : inflatedData.length=${inflatedData.length}"
-//// - zip=${entry.getCompressedSize()}(${entry.getSize()})."
-//				
-//				//private void saveBinaryDataIntoFileSystem(byte[] inflatedData) {
-//			def m_archivePathRoot = File.separator +"tmp"
-//			final File destFile = new File(m_archivePathRoot + File.separator + filename+".pdf");
-//			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile));
-//			bos.write(inflatedData);
-//			bos.flush();
-////		}
 	}
 	
-	/*
-groovy Klasse: com.klst.pdf.PdfExtractor soll für Archive und Attachments/Feature #1510 möglichst gleich sein
-ad_prozess im Menu Verkauf/Verkaufsrechnungen: @script:groovy:ArchivesToPdf mit folgenden Parametern
-* dateFrom, dateTo : Zeitraum für c_invoice.dateinvoiced
-* (default) c_invoice.issotrx='Y'
-Zielverzeichnis für die extrahierten Belege
-Belegstatus c_invoice.docstatus in ('CO','CL','RE') -- keine unfertigen, wie in issue #1436#note-4
-Prefixstring (optional), der Prefix kann aus den Dokumenttypen (Rechnung/Gutschtift) per default ermittelt werden
-
-select * from AD_Ref_List where AD_Reference_id in( select AD_Reference_id from AD_Reference where AD_Reference_ID=131) and value IN('CO','CL','RE')
-
-	 */
 	def getInvoices = { ad_client_id, ad_org_id, dateFrom, dateTo, issotrx='N', docStatus3='YX', tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
 		def sql = """
 SELECT * FROM ${tableName}
@@ -258,7 +191,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		def nDateFrom = 1
 		def nDateTo = 2
 		if(dateFrom>dateTo) { // dateFrom + dateTo vertauschen
-			addMsg("WARN DateRange FROM ${dateFrom} TO ${dateTo} : From>To (wird zur Korrektur getauscht)")
+			addMsg("WARN DateRange FROM ${dateFrom} TO ${dateTo} : From>To (adjusted)")
 			nDateFrom = 2
 			nDateTo = 1
 		} else {
@@ -277,19 +210,19 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 			}
 		}
 		if(obj==null) {
-			println "${CLASSNAME}:getInvoices keine Rechnung gefunden"
-			addMsg("keine Rechnung gefunden für Zeitraum ${dateFrom} bis ${dateTo}")
+			println "${CLASSNAME}:getInvoices no invioces"
+			addMsg("no invioces for dateinvoiced BETWEEN ${dateFrom} AND ${dateTo}")
 		}
-		println "${CLASSNAME}:getInvoices ${result.size()} Rechnung gefunden"
+		println "${CLASSNAME}:getInvoices ${result.size()} invioces found"
 		return result
 	}
 
 	/**
 	 * AD_Process
+	 * @param IsSOTrx : Y for getArchive
 	 * @param DateFrom + DateTo
 	 * @param File_Directory
-	 * @param Prefix
-	 * @param IsSOTrx
+	 * @param extraPrefix + Prefix - inactiv
 	 * @param DocStatus3
 	 */
 	@Override
@@ -315,26 +248,6 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 				}
 			}
 			addMsg("invoices/files : ${invoices.size()}/${files}")
-/*
-com.klst.pdf.PdfExtractor:ctor
-com.klst.pdf.PdfExtractor:run
-com.klst.pdf.PdfExtractor:isProcess A_AD_PInstance_ID: 2475272
-com.klst.pdf.PdfExtractor:isProcess MPInstance: class org.compiere.model.MPInstance
-com.klst.pdf.PdfExtractor:isProcess this._pi=MPInstance[2475272,OK=false]
-com.klst.pdf.PdfExtractor:isProcess para IsSOTrx
-com.klst.pdf.PdfExtractor:isProcess para Y
-com.klst.pdf.PdfExtractor:isProcess para DateFrom
-com.klst.pdf.PdfExtractor:isProcess DateFrom 2018-01-01 00:00:00.0 - 2018-02-01 00:00:00.0
-com.klst.pdf.PdfExtractor:isProcess para File_Directory
-com.klst.pdf.PdfExtractor:isProcess para x
-com.klst.pdf.PdfExtractor:isProcess para extraPrefix
-com.klst.pdf.PdfExtractor:isProcess para N
-com.klst.pdf.PdfExtractor:isProcess para Prefix
-com.klst.pdf.PdfExtractor:isProcess para Rechnung_
-com.klst.pdf.PdfExtractor:isProcess para DocStatus3
-com.klst.pdf.PdfExtractor:isProcess para RE
-com.klst.pdf.PdfExtractor:getInvoices
- */
 		} catch(Exception e) {
 			return e.getMessage()
 		} else {

@@ -126,12 +126,18 @@ class PdfExtractor extends Script {
 //		println "${CLASSNAME}:getPara '${it}' nicht gefunden"
 	}
 
-	def makeFilename = { documentNo , isCreditMemo , docStatus , invoicePre="Rechnung_" , ext=".pdf"->
+	def makeFilename = { documentNo, idInFilename , isCreditMemo , docStatus , invoicePre="Rechnung_" , ext=".pdf"->
 		def prefix = isCreditMemo ? "Gutschrift_" : invoicePre
 		def suffix = docStatus=="RE" ? "_storniert" : ""
 		def documentName = new StringBuilder()
 		documentName.append(prefix)
 		documentName.append(documentNo)
+		if(idInFilename==null) {
+			// keine Id im documentName = prefix + documentNo + suffix + ".pdf"
+		} else {
+			documentName.append("_")
+			documentName.append(idInFilename)
+		}
 		documentName.append(suffix)
 		documentName.append(ext)
 		return documentName.toString()
@@ -312,14 +318,16 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 			println "${CLASSNAME}:run ${invoices.size()}"
 			invoices.each{ inv ->
 				if(isSOTrx=='Y') { // Verkaufsrechnungen aus ad_archive
-					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus())
+					def idInFilename = null
+					def filename = makeFilename(inv.getDocumentNo(), idInFilename, inv.isCreditMemo(), inv.getDocStatus())
 					File file = new File(dir, filename)
 					def bytesWritten = getArchive(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
 					if(bytesWritten>0) {
 						files++
 					}
 				} else { // Einkaufsrechnungen aus attachment entries 
-					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus(),"Eingangsrechnung_")
+					def idInFilename = inv.get_ID() // DocumentNo/Belegnummern sind nicht eindeutig
+					def filename = makeFilename(inv.getDocumentNo(), idInFilename, inv.isCreditMemo(), inv.getDocStatus(),"Eingangsrechnung_")
 					File file = new File(dir, filename)
 					def filesWritten = getAttachment(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
 					if(filesWritten>0) {

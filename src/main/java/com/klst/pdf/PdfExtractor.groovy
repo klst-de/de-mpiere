@@ -139,7 +139,7 @@ class PdfExtractor extends Script {
 	
 	// returns num of written files
 	def getAttachment = { File destFile, ad_client_id, ad_org_id, invoice, tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
-		println "${CLASSNAME}:getAttachment invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
+//		println "${CLASSNAME}:getAttachment invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
 		def record_id = invoice.get_ID()
 		def sql = """
 SELECT * FROM ad_attachment
@@ -148,7 +148,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
   AND record_id = ?
 """
 		def pstmt = null
-		println "${CLASSNAME}:getAttachment query:${sql} 1:${record_id}"
+//		println "${CLASSNAME}:getAttachment query:${sql} 1:${record_id}"
 		pstmt = DB.prepareStatement(sql, trxName)
 		pstmt.setInt(1, record_id)
 		def resultSet = pstmt.executeQuery()
@@ -162,11 +162,9 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 			}
 		}
 		if(numA>1) {
-			println "${CLASSNAME}:getAttachment ${numA} attachments for ${invoice} : got ${obj}"
 			addMsg("${numA} attachments for ${invoice} : got ${obj}")
 		}
 		if(obj==null) {
-			println "${CLASSNAME}:getAttachment no attachments for ${invoice}"
 			addMsg("no attachments for ${invoice}")
 			return
 		} else {
@@ -174,7 +172,6 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		}
 		
 		if(obj.getEntryCount()==0) {
-			println "${CLASSNAME}:getAttachment no attachment entries for ${invoice}"
 			addMsg("no attachment entries for ${invoice}")
 			return
 		}
@@ -183,19 +180,21 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		MAttachmentEntry[] entries = obj.getEntries()
 		entries.each{ e ->
 			byte[] binaryData = e.getData()
-			println "${CLASSNAME}:getAttachment write ${e} isPDF:${e.isPDF()} binaryData.length=${binaryData.length}"
-			if(e.isPDF()) {
-				if(writtenFiles>0) { // destFile ist besser als e.getName()
-					println "${CLASSNAME}:getAttachment more PDF-attachment entries for ${invoice} : got ${e}"
+			if(e.isPDF()) { // destFile ist besser als e.getName()
+				if(writtenFiles>0) {
 					addMsg("more PDF-attachment entries for ${invoice} : got ${e}")
 				}
 				BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile))
 				bos.write(binaryData)
 				bos.flush()
 				bos.close()
+				
+				long ts = obj.getUpdated().getTime()
+				def setLastModified = destFile.setLastModified(ts)
+				println "${CLASSNAME}:getAttachment write to ${destFile} setLastModified:${setLastModified} binaryData.length=${binaryData.length} - ${e}"
 				writtenFiles++
 			} else {
-				addMsg("attachment entry for ${invoice} is not PDF : ${e}")
+				addMsg("attachment entry for ${invoice} is not PDF : ${e} MimeType:${e.getContentType()}")
 			}
 		}
 		return writtenFiles
@@ -203,7 +202,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 	
 	// returns num of bytes written
 	def getArchive = { File destFile, ad_client_id, ad_org_id, invoice, tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
-		println "${CLASSNAME}:getArchive invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
+//		println "${CLASSNAME}:getArchive invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
 		def record_id = invoice.get_ID()
 		def sql = """
 SELECT * FROM ad_archive
@@ -212,7 +211,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
   AND record_id = ?
 """
 		def pstmt = null
-		println "${CLASSNAME}:getArchive ${sql} 1:${record_id}"
+//		println "${CLASSNAME}:getArchive query:${sql} 1:${record_id}"
 		pstmt = DB.prepareStatement(sql, trxName)
 		pstmt.setInt(1, record_id)
 		def resultSet = pstmt.executeQuery()
@@ -226,11 +225,9 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 			}
 		}
 		if(numArch>1) {
-			println "${CLASSNAME}:getArchive ${numArch} archives for ${invoice} : got ${obj}"
 			addMsg("${numArch} archives for ${invoice} : got ${obj}")
 		}
 		if(obj==null) {
-			println "${CLASSNAME}:getArchive no archive for ${invoice}"
 			addMsg("no archive for ${invoice}")
 			return
 		} else {
@@ -238,14 +235,19 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		}
 		
 		byte[] binaryData = obj.getBinaryData()
-		println "${CLASSNAME}:getArchive write to to ${destFile} binaryData.length=${binaryData.length}"
 		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile))
 		bos.write(binaryData)
 		bos.flush()
 		bos.close()
+		
+		long ts = obj.getUpdated().getTime()
+		def setLastModified = destFile.setLastModified(ts)
+		println "${CLASSNAME}:getArchive write to ${destFile} setLastModified:${setLastModified} binaryData.length=${binaryData.length}"
+		
 		return binaryData.length	
 	}
 	
+	// returns a list of invoices, may be empty
 	def getInvoices = { ad_client_id, ad_org_id, dateFrom, dateTo, issotrx='N', docStatus3='YX', tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
 		def sql = """
 SELECT * FROM ${tableName}
@@ -279,7 +281,6 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 			}
 		}
 		if(obj==null) {
-			println "${CLASSNAME}:getInvoices no invioces"
 			addMsg("no invioces for dateinvoiced BETWEEN ${dateFrom} AND ${dateTo}")
 		}
 		println "${CLASSNAME}:getInvoices ${result.size()} invioces found"
@@ -318,7 +319,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 						files++
 					}
 				} else { // Einkaufsrechnungen aus attachment entries 
-					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus(),"Einkaufsrechnung_")
+					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus(),"Eingangsrechnung_")
 					File file = new File(dir, filename)
 					def filesWritten = getAttachment(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
 					if(filesWritten>0) {

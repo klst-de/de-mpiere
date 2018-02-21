@@ -1,5 +1,7 @@
-// Feature #1467 - ttp: Extrakt von Ausgangsrechnungen ad_archive
+// Feature #1467 + #1510 - ttp: Extrakt von Ausgangsrechnungen ad_archive , Eingangsrechnungen aus ad_attachment
 package com.klst.pdf
+
+import org.compiere.model.MAttachmentEntry
 
 import groovy.lang.Binding
 import groovy.lang.Script
@@ -69,8 +71,10 @@ class PdfExtractor extends Script {
 	// dynamisch geladene AD Klassen
 	Class MPInstance = null
 	Class DB = null //org.compiere.util.DB
+	Class MAttachment = null
+	Class MAttachmentEntry = null
 	Class MArchive = null
-	Class MInvoice = null //org.compiere.model.MInvoice
+	Class MInvoice = null //org.compiere.model.MInvoice 
 	def isProcess = { it="P" ->
 		def ret = eventtype()==it
 		if(ret) {
@@ -106,6 +110,8 @@ class PdfExtractor extends Script {
 			DB = this.class.classLoader.loadClass("org.compiere.util.DB", true, false )
 			MInvoice = this.class.classLoader.loadClass("org.compiere.model.MInvoice", true, false )
 			MArchive = this.class.classLoader.loadClass("org.compiere.model.MArchive", true, false )
+			MAttachment = this.class.classLoader.loadClass("org.compiere.model.MAttachment", true, false )
+			MAttachmentEntry = this.class.classLoader.loadClass("org.compiere.model.MAttachmentEntry", true, false )
 		}
 		return ret
 	}
@@ -120,8 +126,8 @@ class PdfExtractor extends Script {
 //		println "${CLASSNAME}:getPara '${it}' nicht gefunden"
 	}
 
-	def makeFilename = { documentNo , isCreditMemo , docStatus , ext=".pdf"->
-		def prefix = isCreditMemo ? "Gutschrift_" : "Rechnung_"
+	def makeFilename = { documentNo , isCreditMemo , docStatus , invoicePre="Rechnung_" , ext=".pdf"->
+		def prefix = isCreditMemo ? "Gutschrift_" : invoicePre
 		def suffix = docStatus=="RE" ? "_storniert" : ""
 		def documentName = new StringBuilder()
 		documentName.append(prefix)
@@ -129,6 +135,70 @@ class PdfExtractor extends Script {
 		documentName.append(suffix)
 		documentName.append(ext)
 		return documentName.toString()
+	}
+	
+	// returns num of written files
+	def getAttachment = { File destFile, ad_client_id, ad_org_id, invoice, tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
+		println "${CLASSNAME}:getAttachment invoice.status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()} ${invoice}"
+		def record_id = invoice.get_ID()
+		def sql = """
+SELECT * FROM ad_attachment
+WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND isactive = 'Y'
+  AND ad_table_id in(select ad_table_id from ad_table where tablename='${tableName}')
+  AND record_id = ?
+"""
+		def pstmt = null
+		println "${CLASSNAME}:getAttachment query:${sql} 1:${record_id}"
+		pstmt = DB.prepareStatement(sql, trxName)
+		pstmt.setInt(1, record_id)
+		def resultSet = pstmt.executeQuery()
+		def obj = null
+		def numA = 0
+		if(resultSet) {
+			while(resultSet.next()) {
+				numA++
+				obj = MAttachment.newInstance(ctx, resultSet, trxName)
+				println "${CLASSNAME}:getAttachment ${obj}"
+			}
+		}
+		if(numA>1) {
+			println "${CLASSNAME}:getAttachment ${numA} attachments for ${invoice} : got ${obj}"
+			addMsg("${numA} attachments for ${invoice} : got ${obj}")
+		}
+		if(obj==null) {
+			println "${CLASSNAME}:getAttachment no attachments for ${invoice}"
+			addMsg("no attachments for ${invoice}")
+			return
+		} else {
+			println "${CLASSNAME}:getAttachment EntryCount=:${obj.getEntryCount()} invoice.DocumentNo:${invoice.getDocumentNo()} status=${invoice.getDocStatus()} isCreditMemo=${invoice.isCreditMemo()}"
+		}
+		
+		if(obj.getEntryCount()==0) {
+			println "${CLASSNAME}:getAttachment no attachment entries for ${invoice}"
+			addMsg("no attachment entries for ${invoice}")
+			return
+		}
+		
+		def writtenFiles = 0
+		MAttachmentEntry[] entries = obj.getEntries()
+		entries.each{ e ->
+			byte[] binaryData = e.getData()
+			println "${CLASSNAME}:getAttachment write ${e} isPDF:${e.isPDF()} binaryData.length=${binaryData.length}"
+			if(e.isPDF()) {
+				if(writtenFiles>0) { // destFile ist besser als e.getName()
+					println "${CLASSNAME}:getAttachment more PDF-attachment entries for ${invoice} : got ${e}"
+					addMsg("more PDF-attachment entries for ${invoice} : got ${e}")
+				}
+				BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile))
+				bos.write(binaryData)
+				bos.flush()
+				bos.close()
+				writtenFiles++
+			} else {
+				addMsg("attachment entry for ${invoice} is not PDF : ${e}")
+			}
+		}
+		return writtenFiles
 	}
 	
 	// returns num of bytes written
@@ -173,8 +243,7 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		bos.write(binaryData)
 		bos.flush()
 		bos.close()
-		return binaryData.length
-				
+		return binaryData.length	
 	}
 	
 	def getInvoices = { ad_client_id, ad_org_id, dateFrom, dateTo, issotrx='N', docStatus3='YX', tableName='C_Invoice', trxName=this._TrxName, ctx=this._Ctx ->
@@ -231,20 +300,30 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
 		if(isProcess()) try {
 			File dir = new File(this.paraDict.get("File_Directory"))
 			if(!dir.isDirectory()) {
-				return dir.getAbsolutePath()+" is not a Directory" 
+				throw new Exception(dir.getAbsolutePath()+" is not a Directory")
 			}
+			def isSOTrx = this.paraDict.get("IsSOTrx")
 			def invoices = getInvoices(this.getProperty("A_AD_Client_ID"), 1000000
 				, this.paraDict.get("DateFrom"), this.paraDict.get("DateTo")
-				, this.paraDict.get("IsSOTrx"), this.paraDict.get("DocStatus3")) 
-			
+				, isSOTrx, this.paraDict.get("DocStatus3")) 
+
 			def files = 0
 			println "${CLASSNAME}:run ${invoices.size()}"
 			invoices.each{ inv ->
-				def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus())
-				File file = new File(dir, filename)
-				def bytesWritten = getArchive(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
-				if(bytesWritten>0) {
-					files++
+				if(isSOTrx=='Y') { // Verkaufsrechnungen aus ad_archive
+					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus())
+					File file = new File(dir, filename)
+					def bytesWritten = getArchive(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
+					if(bytesWritten>0) {
+						files++
+					}
+				} else { // Einkaufsrechnungen aus attachment entries 
+					def filename = makeFilename(inv.getDocumentNo(), inv.isCreditMemo(), inv.getDocStatus(),"Einkaufsrechnung_")
+					File file = new File(dir, filename)
+					def filesWritten = getAttachment(file, this.getProperty("A_AD_Client_ID"), 1000000, inv)
+					if(filesWritten>0) {
+						files++
+					}
 				}
 			}
 			addMsg("invoices/files : ${invoices.size()}/${files}")

@@ -58,6 +58,27 @@ class ClientOrgUser extends ImportScript {
 		return updates
 	}
 
+	def	m_warehouse_acct_insert_sql = { m_warehouse_id ->
+		def sql = """
+INSERT INTO m_warehouse_acct ( 
+  m_warehouse_id,
+  c_acctschema_id,
+  ad_client_id,
+  ad_org_id,
+  createdby,
+  updatedby,
+  w_inventory_acct,
+  w_invactualadjust_acct,
+  w_differences_acct,
+  w_revaluation_acct 
+)
+    select ?,c_acctschema_id,ad_client_id,ad_org_id,?,?,w_inventory_acct,w_invactualadjust_acct, w_differences_acct,w_revaluation_acct
+      from m_warehouse_acct
+     WHERE ad_client_id=1000000 AND m_warehouse_id=1000000		
+"""
+		return doSql(sql , [m_warehouse_id,SUPER_USER_ID,SUPER_USER_ID])
+	}
+
 	@Override
 	public Object run() {
 		println "${CLASSNAME}:run"
@@ -169,8 +190,8 @@ WHERE o.ad_client_id=1000000
 		done = doSql(c_location_update_sql)
 
 		TABLENAME = "m_warehouse"
-		// Bug: from M_Warehouse_Acct wird mit doInsert gelöscht
-		// TODO M_Warehouse_Acct rows für die anderen Lager erstellen
+		// Bug: M_Warehouse_Acct wird mit doInsert gelöscht
+		//      M_Warehouse_Acct rows für die anderen 3 Lager erstellen
 /* TABLE m_warehouse_acct ...
   w_inventory_acct numeric(10,0) NOT NULL,
   w_invactualadjust_acct numeric(10,0) NOT NULL,
@@ -187,6 +208,12 @@ WHERE o.ad_client_id=1000000
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
+		TABLENAME = "m_warehouse_acct"
+		done = m_warehouse_acct_insert_sql(1000001) // "Streckengeschäft"
+		done = m_warehouse_acct_insert_sql(1000002) // "Lager Zeppelinpark"
+		done = m_warehouse_acct_insert_sql(1000003) // "Lager Ostpreussendamm"
+		done = updateSequence_acct("m_warehouse") // tablename ohne acct!
+	
 		return null;
 	}
 

@@ -333,6 +333,24 @@ WHERE lower(name) = ?
 		return doSql(sql , [tablename,tablename,tablename,tablename])
 	}
 	
+	// tablename ohne acct!
+	def	updateSequence_acct = { tablename ->
+		def sql = """
+UPDATE ad_sequence 
+SET currentnext = (
+		SELECT COALESCE( (MAX(${tablename}_id)+1),(SELECT startno FROM ad_sequence WHERE lower(name) = ?) )
+		FROM ${tablename}_acct WHERE ${tablename}_id>=(SELECT startno FROM ad_sequence WHERE lower(name) = ?)
+) 
+, currentnextsys = (
+		SELECT COALESCE( (max(${tablename}_id)+1),50000 )
+		FROM ${tablename}_acct WHERE ${tablename}_id>=50000 AND ${tablename}_id<(SELECT startno FROM ad_sequence WHERE lower(name) = ?)
+) 
+WHERE lower(name) = ?
+"""
+		String tablename_acct = "${tablename}_acct"
+		return doSql(sql , [tablename_acct,tablename_acct,tablename_acct,tablename_acct])
+	}
+	
 	@Override
 	public Object run() {  // nur Test
 		println "${CLASSNAME}:run"

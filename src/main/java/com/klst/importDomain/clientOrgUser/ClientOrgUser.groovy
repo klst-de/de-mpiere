@@ -2,6 +2,7 @@ package com.klst.importDomain.clientOrgUser
 
 import com.klst.importDomain.ImportScript
 import groovy.lang.Binding;
+import java.sql.SQLException
 
 
 class ClientOrgUser extends ImportScript {
@@ -16,16 +17,59 @@ class ClientOrgUser extends ImportScript {
 		println "${CLASSNAME}:ctor binding"
 	}
 
+	//  
+	//def doInsertWarehouse = { tablename , nullcolumns=[] , clientID=DEFAULT_CLIENT_ID , useSuperUser=false ->
+	def doMergeWarehouse = { tablename , keycolumns=[] , nameValue=NAMEVALUE ->
+		println "${CLASSNAME}:doMergeWarehouse ${tablename} PRIMARY KEY = ${keycolumns}."
+		if(n_live_tup.get(tablename)==null) {
+			println "${CLASSNAME}:doMergeWarehouse ${tablename} leer -> nix zu tun."
+			return 0
+		}
+		origin = columns(tablename,DEFAULT_FROM_SCHEMA)
+		target = columns(tablename)
+		if(origin.size()==target.size()) {
+			println "${CLASSNAME}:doMergeWarehouse PASSED number of columns = ${origin.size()}."
+		} else {
+			println "${CLASSNAME}:doMergeWarehouse differnt number of columns: origin = ${origin.size()} <> target = ${target.size()}."
+			println "${origin.size()}: ${origin}"
+			println "${target.size()}: ${target}"
+			println "${CLASSNAME}:doMergeWarehouse trying the intersection ..."
+		}
+		if(checkColumns(false,nameValue)!=null) {
+			println "${CLASSNAME}:doMergeWarehouse PASSED number of intersect columns = ${commonKeys.size()}."
+		} else {
+			throw new RuntimeException("keine matching Spalten gefunden")
+		}
+		def sql = makeMerge(tablename , keycolumns)
+		println "${sql}"
+		
+		def updates = 0
+		sqlInstance.connection.autoCommit = false
+		try {
+			sqlInstance.execute(sql,[DEFAULT_CLIENT_ID,DEFAULT_CLIENT_ID])
+			updates = sqlInstance.getUpdateCount()
+			println "${CLASSNAME}:doMerge updates = ${updates}."
+			sqlInstance.commit();
+		}catch(SQLException ex) {
+			println "${CLASSNAME}:doMerge ${ex}"
+			sqlInstance.rollback()
+			println "${CLASSNAME}:doMerge Transaction rollback."
+		}
+		return updates
+	}
+
 	@Override
 	public Object run() {
 		println "${CLASSNAME}:run"
 		rowsPerTable()
 		
+		def rows = 0
+		def done = 0
 		// org , client (später) mit update, jetzt mit doMerge , die *info dazu nicht importieren
 		def TABLENAME = "ad_org"
-		def rows = n_live_tup[TABLENAME]
+		rows = n_live_tup[TABLENAME]
 		//def done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true) // true == useSuperUser
-		def done = doMerge(TABLENAME,[TABLENAME+'_id'])
+		done = doMerge(TABLENAME,[TABLENAME+'_id'])
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 
 		TABLENAME = "ad_client"
@@ -40,12 +84,6 @@ class ClientOrgUser extends ImportScript {
 		
 		//	Detail: Regel _RETURN für Sicht rv_bpartner hängt von Spalte »address1« ab ...
 		TABLENAME = "c_location"
-		rows = n_live_tup[TABLENAME]
-		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
-		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		done = updateSequence(TABLENAME)
-		
-		TABLENAME = "m_warehouse"
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
@@ -130,6 +168,25 @@ WHERE o.ad_client_id=1000000
 """
 		done = doSql(c_location_update_sql)
 
+		TABLENAME = "m_warehouse"
+		// Bug: from M_Warehouse_Acct wird mit doInsert gelöscht
+		// TODO M_Warehouse_Acct rows für die anderen Lager erstellen
+/* TABLE m_warehouse_acct ...
+  w_inventory_acct numeric(10,0) NOT NULL,
+  w_invactualadjust_acct numeric(10,0) NOT NULL,
+  w_differences_acct numeric(10,0) NOT NULL,
+  w_revaluation_acct numeric(10,0) NOT NULL,
+...
+  CONSTRAINT m_warehouse_warehouse_acct FOREIGN KEY (m_warehouse_id)
+      REFERENCES m_warehouse (m_warehouse_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+ */
+		rows = n_live_tup[TABLENAME]
+//		done = doInsert(TABLENAME,[],DEFAULT_CLIENT_ID,true)
+		done = doMergeWarehouse(TABLENAME,[TABLENAME+'_id'])
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
 		return null;
 	}
 

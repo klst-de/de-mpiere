@@ -17,6 +17,51 @@ class Product extends ImportScript {
 		println "${CLASSNAME}:ctor binding"
 	}
 
+	def	m_product_category_acct_insert = { m_product_category_id ->
+		def sql = """
+INSERT INTO m_product_category_acct ( 
+  m_product_category_id,
+  c_acctschema_id,
+  ad_client_id,
+  ad_org_id,
+  createdby,
+  updatedby,
+  p_revenue_acct,
+  p_expense_acct,
+  p_asset_acct,
+  p_cogs_acct,
+  p_purchasepricevariance_acct,
+  p_invoicepricevariance_acct,
+  p_tradediscountrec_acct,
+  p_tradediscountgrant_acct,
+  processing,
+  costingmethod,
+  costinglevel,
+  p_inventoryclearing_acct,
+  p_costadjustment_acct,
+  p_floorstock_acct,
+  p_wip_acct,
+  p_methodchangevariance_acct,
+  p_usagevariance_acct,
+  p_ratevariance_acct,
+  p_mixvariance_acct,
+  p_costofproduction_acct,
+  p_labor_acct,
+  p_burden_acct,
+  p_outsideprocessing_acct,
+  p_overhead_acct,
+  p_scrap_acct,
+  p_averagecostvariance_acct
+)
+    select ?,c_acctschema_id,ad_client_id,ad_org_id,?,?,p_revenue_acct,p_expense_acct,p_asset_acct,p_cogs_acct,p_purchasepricevariance_acct,p_invoicepricevariance_acct,p_tradediscountrec_acct,p_tradediscountgrant_acct
+          ,processing,costingmethod,costinglevel,p_inventoryclearing_acct,p_costadjustment_acct,p_floorstock_acct,p_wip_acct,p_methodchangevariance_acct,p_usagevariance_acct
+          ,p_ratevariance_acct,p_mixvariance_acct,p_costofproduction_acct,p_labor_acct,p_burden_acct,p_outsideprocessing_acct,p_overhead_acct,p_scrap_acct,p_averagecostvariance_acct
+      from m_product_category_acct
+     WHERE ad_client_id=1000000 AND m_product_category_id=1000000		
+"""
+		return doSql(sql , [m_product_category_id,SUPER_USER_ID,SUPER_USER_ID])
+	}
+
 	@Override
 	public Object run() {
 		println "${CLASSNAME}:run"
@@ -61,7 +106,7 @@ group by 1
 		def rows = n_live_tup[TABLENAME] 
 		
 		def sql = """
- 		INSERT INTO c_uom ( c_uom_id, ad_client_id, ad_org_id, isactive, created, updated, createdby, updatedby, x12de355, uomsymbol, name, description, stdprecision, costingprecision, isdefault, uomtype ) 
+INSERT INTO c_uom ( c_uom_id, ad_client_id, ad_org_id, isactive, created, updated, createdby, updatedby, x12de355, uomsymbol, name, description, stdprecision, costingprecision, isdefault, uomtype ) 
     select m.c_uom_id, m.ad_client_id, m.ad_org_id, m.isactive, m.created, m.updated, m.createdby, m.updatedby, m.x12de355, m.uomsymbol, m.name, m.description, m.stdprecision, m.costingprecision, m.isdefault, m.uomtype 
       from mierp001.c_uom AS m
      WHERE m.ad_client_id=?
@@ -97,6 +142,16 @@ ALTER TABLE m_product_category_acct
 		done = updateSequence(TABLENAME)
 
 		done = doSql(add_mprodcat_mprodcatacct)
+		
+		// m_product_category_acct rows für cat>1000000 erstellen
+		TABLENAME = "m_product_category_acct"
+		done = m_product_category_acct_insert(1000001) // "3401";"Eigendienstleistung"
+		done = m_product_category_acct_insert(1000002)
+		done = m_product_category_acct_insert(1000004)
+		done = m_product_category_acct_insert(1000005)
+		done = m_product_category_acct_insert(1000006)
+		done = m_product_category_acct_insert(1000007)
+		done = updateSequence_acct("m_product_category") // tablename ohne acct!
 		
 		TABLENAME = "m_attributeset"
 		rows = n_live_tup[TABLENAME]

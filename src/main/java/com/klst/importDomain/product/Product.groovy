@@ -78,11 +78,25 @@ group by 1
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
+		// damit recs in m_product_category_acct nicht gelöscht werden
+		drop_mprodcat_mprodcatacct = """
+ALTER TABLE m_product_category_acct DROP CONSTRAINT mprodcat_mprodcatacct
+"""
+		add_mprodcat_mprodcatacct = """
+ALTER TABLE m_product_category_acct
+  ADD CONSTRAINT mprodcat_mprodcatacct FOREIGN KEY (m_product_category_id)
+      REFERENCES m_product_category (m_product_category_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+"""
+		done = doSql(drop_mprodcat_mprodcatacct)
+		
 		TABLENAME = "m_product_category"
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
+
+		done = doSql(add_mprodcat_mprodcatacct)
 		
 		TABLENAME = "m_attributeset"
 		rows = n_live_tup[TABLENAME]
@@ -96,23 +110,6 @@ group by 1
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
-		//   Detail: Schlüssel »(m_product_id)=(148)« existiert bereits.
-/*
-select * from mierp001.m_product 
-where m_product_id in(select m_product_id from  m_product)
-
-139;"10000139";"XLR Kabel, 3m, St/Ku,"
-140;"10000140";"XLR Kabel, 1m, St/Ku,"
-141;"10000141";"Video/Audio Extender Cat.5/6 bis 600m,"
-142;"10000142";"Professional HDMI Professional Extender"
-145;"10000145";"Professional HDMI Professional Extender"
-130;"10000130";"Batterie, Lith. für Apple Computer"
-147;"10000147";"Professional HDMI Professional Extender"
-148;"10000148";"Professional HDMI Professional Extender"
-128;"10000128";"An- oder Abfahrt wegen Hardware"
-
-die prods sind auf mi inaktiv, haben aber referenzen in c_invoiceline, m_inoutline und c_orderline
-*/
 		sql = """
 INSERT INTO m_product ( m_product_id, ad_client_id, ad_org_id, isactive, created, createdby, updated, updatedby, value, name, description, documentnote, help, upc, sku, c_uom_id, salesrep_id, issummary, isstocked, ispurchased, issold, isbom, isinvoiceprintdetails, ispicklistprintdetails, isverified, c_revenuerecognition_id, m_product_category_id, classification, volume, weight, shelfwidth, shelfheight, shelfdepth, unitsperpallet, c_taxcategory_id, s_resource_id, discontinued, discontinuedby, processing, s_expensetype_id, producttype, imageurl, descriptionurl, guaranteedays, r_mailtext_id, versionno, m_attributeset_id, m_attributesetinstance_id, downloadurl, m_freightcategory_id, m_locator_id, guaranteedaysmin, iswebstorefeatured, isselfservice, c_subscriptiontype_id, isdropship, isexcludeautodelivery, group1, group2, istoformule, lowlevel, unitsperpack ) 
     select m.m_product_id, m.ad_client_id, m.ad_org_id, m.isactive, m.created, m.createdby, m.updated, m.updatedby, m.value, m.name, m.description, m.documentnote, m.help, m.upc, m.sku, m.c_uom_id, m.salesrep_id, m.issummary, m.isstocked, m.ispurchased, m.issold, m.isbom, m.isinvoiceprintdetails, m.ispicklistprintdetails, m.isverified, m.c_revenuerecognition_id, m.m_product_category_id, m.classification, m.volume, m.weight, m.shelfwidth, m.shelfheight, m.shelfdepth, m.unitsperpallet, m.c_taxcategory_id, m.s_resource_id, m.discontinued, m.discontinuedby, m.processing, m.s_expensetype_id, m.producttype, m.imageurl, m.descriptionurl, m.guaranteedays, m.r_mailtext_id, m.versionno, m.m_attributeset_id, m.m_attributesetinstance_id, m.downloadurl, m.m_freightcategory_id, m.m_locator_id, m.guaranteedaysmin, m.iswebstorefeatured, m.isselfservice, m.c_subscriptiontype_id, m.isdropship, m.isexcludeautodelivery, m.group1, m.group2, m.istoformule, m.lowlevel, m.unitsperpack from mierp001.m_product AS m
@@ -130,7 +127,7 @@ INSERT INTO m_product ( m_product_id, ad_client_id, ad_org_id, isactive, created
 """
 		done = doSql(sql)
 		
-//               auf AD390 c_taxcategory_id numeric(10,0) NOT NULL, das ist OK , aber Steuerkategorie wird in Fenste Produkt nicht angezeigt!!!
+//               auf AD390 c_taxcategory_id numeric(10,0) NOT NULL, das ist OK , aber Steuerkategorie wird in Fenster Produkt nicht angezeigt!!!
 //               Ursache: fehlende Übersetzungen  C_TaxCategory_Trl_de_DE.xml 
 
 //-- wg. m_product_po

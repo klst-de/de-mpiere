@@ -231,12 +231,23 @@ UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_do
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
-		
-		TABLENAME = "c_charge"   
-		rows = n_live_tup[TABLENAME]
-		done = doInsert(TABLENAME)
-		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		done = updateSequence(TABLENAME)
+
+/*
+--SELECT * FROM mierp001.c_charge
+1000000;1000000;1000000;"Y";"2011-06-30 10:33:14";    100;"2011-06-30 10:33:14";    100;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;
+--SELECT * FROM mierp001.c_charge_acct
+1000000;1000000;1000000;0;"Y";"2011-06-30 09:31:39.854503";100;"2011-06-30 09:31:39.854503";100;1000027;1000028
+-- nach manuellem create via UI:
+SELECT * FROM c_charge
+1000000;1000000;1000000;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;;""
+SELECT * FROM c_charge_acct
+1000000;1000000;1000000;0;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;1000031;1000032;""		
+ */
+//		TABLENAME = "c_charge"  // was ist mit C_Charge_Acct ???
+//		rows = n_live_tup[TABLENAME]
+//		done = doInsert(TABLENAME)
+//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+//		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "c_conversiontype"  // leer 
 		rows = n_live_tup[TABLENAME]
@@ -244,11 +255,11 @@ UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_do
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
-		TABLENAME = "c_project"   
-		rows = n_live_tup[TABLENAME]
-		done = doInsert(TABLENAME)
-		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-		done = updateSequence(TABLENAME)
+//		TABLENAME = "c_project" // nur "Standard" -- compare: identisch bis auf timestamp, also nix importieren
+//		rows = n_live_tup[TABLENAME]
+//		done = doInsert(TABLENAME)
+//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+//		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "c_order"  // description character varying(255), >>> muss auf 1024   
 		// FEHLER: NULL-Wert in Spalte »m_pricelist_id« verletzt Not-Null-Constraint , Korrektur hier

@@ -23,7 +23,8 @@ class ImportScript extends Script {
 	public ImportScript(Binding binding) {
 		super(binding);
 		println "${CLASSNAME}:ctor binding"
-		def db = [url:'jdbc:postgresql://localhost/adempiere_390lts', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
+//		def db = [url:'jdbc:postgresql://localhost/adempiere_390lts', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
+		def db = [url:'jdbc:postgresql://localhost/ad_39'           , user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
 		try {
 			sqlInstance = Sql.newInstance(db.url, db.user, db.password, db.driver)
 		} catch (Exception e) {
@@ -242,6 +243,57 @@ INSERT INTO ${tablename} ( ${selo} )
 		}
 
 		return inserts-deletes
+	}
+	
+	def	makeUpdate = { tablename , keycolumns=[] ->
+		def selo = (commonKeys.collect  { "$it" } as Iterable).join(', ')
+		def selm = (commonKeys.collect  { "m.$it" } as Iterable).join(', ')
+		def sql = """
+UPDATE ${tablename} SET ( ${selo} ) 
+= ( select ${selm} from ${DEFAULT_FROM_SCHEMA}.${tablename} AS m , ${tablename} AS o 
+    where o.${keycolumns[0]} = m.${keycolumns[0]} and o.${keycolumns[0]}=? and m.ad_client_id=? ) 
+   WHERE ${tablename}.ad_client_id=? and ${tablename}.${keycolumns[0]}=?
+"""
+		return sql			
+	}
+
+	def doUpdate = { tablename , keycolumns=[] , id , nameValue=NAMEVALUE ->
+		println "${CLASSNAME}:doUpdate ${tablename} PRIMARY KEY = ${keycolumns} , id=${id}."
+		if(n_live_tup.get(tablename)==null) {
+			println "${CLASSNAME}:doUpdate ${tablename} leer -> nix zu tun."
+			return 0
+		}
+		origin = columns(tablename,DEFAULT_FROM_SCHEMA)
+		target = columns(tablename)
+		if(origin.size()==target.size()) {
+			println "${CLASSNAME}:doUpdate PASSED number of columns = ${origin.size()}."
+		} else {
+			println "${CLASSNAME}:doUpdate differnt number of columns: origin = ${origin.size()} <> target = ${target.size()}."
+			println "${origin.size()}: ${origin}"
+			println "${target.size()}: ${target}"
+			println "${CLASSNAME}:doUpdate trying the intersection ..."
+		}
+		if(checkColumns(false,nameValue)!=null) {
+			println "${CLASSNAME}:doUpdate PASSED number of intersect columns = ${commonKeys.size()}."
+		} else {
+			throw new RuntimeException("keine matching Spalten gefunden")
+		}
+		def sql = makeUpdate(tablename , keycolumns)
+		println "${sql}"
+		
+		def updates = 0
+		sqlInstance.connection.autoCommit = false
+		try {
+			sqlInstance.execute(sql,[id,DEFAULT_CLIENT_ID,DEFAULT_CLIENT_ID,id])
+			updates = sqlInstance.getUpdateCount()
+			println "${CLASSNAME}:doUpdate updates = ${updates}."
+			sqlInstance.commit();
+		}catch(SQLException ex) {
+			println "${CLASSNAME}:doUpdate ${ex}"
+			sqlInstance.rollback()
+			println "${CLASSNAME}:doUpdate Transaction rollback."
+		}
+		return updates
 	}
 	
 	def	makeMerge = { tablename , keycolumns=[] ->

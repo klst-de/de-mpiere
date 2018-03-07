@@ -119,7 +119,7 @@ AND ${tablename}_id in( ${sql_in} )
 """
 		def update_sql = """
 UPDATE ${tablename} o
- SET description = ( SELECT 'imported TODO' FROM ${schema}.${tablename} m WHERE o.${tablename}_id=m.${tablename}_id )
+ SET description = ( SELECT 'imported from mierp001' FROM ${schema}.${tablename} m WHERE o.${tablename}_id=m.${tablename}_id )
 WHERE o.ad_client_id=? AND o.${tablename}_id in( ${sql_in} )
 """
 		def done = doSql(update_sql,[DEFAULT_CLIENT_ID])

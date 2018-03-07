@@ -178,6 +178,31 @@ WHERE o.ad_client_id=? AND o.ad_sequence_id in( SELECT docnosequence_id FROM ${t
 		return cols.size()
 	}
 
+	def	c_charge_acct_insert = { c_charge_id ->
+		def sql = """
+INSERT INTO c_charge_acct ( 
+  c_charge_id,
+  c_acctschema_id,
+  ad_client_id,
+  ad_org_id,
+  createdby,
+  updatedby,
+  ch_expense_acct,
+  ch_revenue_acct 
+) VALUES (
+  ?,
+  1000000,
+  1000000,
+  0,
+  ?,
+  ?,
+  1000031,
+  1000032 
+)
+"""
+		return doSql(sql , [c_charge_id,SUPER_USER_ID,SUPER_USER_ID])
+	}
+
 	@Override
 	public Object run() {
 		println "${CLASSNAME}:run"
@@ -232,23 +257,6 @@ UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_do
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 
-/*
---SELECT * FROM mierp001.c_charge
-1000000;1000000;1000000;"Y";"2011-06-30 10:33:14";    100;"2011-06-30 10:33:14";    100;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;
---SELECT * FROM mierp001.c_charge_acct
-1000000;1000000;1000000;0;"Y";"2011-06-30 09:31:39.854503";100;"2011-06-30 09:31:39.854503";100;1000027;1000028
--- nach manuellem create via UI:
-SELECT * FROM c_charge
-1000000;1000000;1000000;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;;""
-SELECT * FROM c_charge_acct
-1000000;1000000;1000000;0;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;1000031;1000032;""		
- */
-//		TABLENAME = "c_charge"  // was ist mit C_Charge_Acct ???
-//		rows = n_live_tup[TABLENAME]
-//		done = doInsert(TABLENAME)
-//		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
-//		done = updateSequence(TABLENAME)
-		
 		TABLENAME = "c_conversiontype"  // leer 
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME)
@@ -370,8 +378,28 @@ UPDATE c_invoice o
 SET c_cashline_id = ( SELECT m.c_cashline_id FROM mierp001.c_invoice m WHERE o.c_invoice_id=m.c_invoice_id )
 WHERE o.ad_client_id=1000000
 """
-				done = doSql(sql)
+		done = doSql(sql)
 		
+/*
+--SELECT * FROM mierp001.c_charge
+1000000;1000000;1000000;"Y";"2011-06-30 10:33:14";    100;"2011-06-30 10:33:14";    100;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;
+--SELECT * FROM mierp001.c_charge_acct
+1000000;1000000;1000000;0;"Y";"2011-06-30 09:31:39.854503";100;"2011-06-30 09:31:39.854503";100;1000027;1000028
+-- nach manuellem create via UI:
+SELECT * FROM c_charge
+1000000;1000000;1000000;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;"Eigenverbrauch";"";0;"Y";"N";1000001;"N";;;""
+SELECT * FROM c_charge_acct
+1000000;1000000;1000000;0;"Y";"2018-03-04 23:00:11";1000016;"2018-03-04 23:00:11";1000016;1000031;1000032;""		
+ */
+		TABLENAME = "c_charge"  // was ist mit C_Charge_Acct ???
+		rows = n_live_tup[TABLENAME]
+		done = doInsert(TABLENAME)
+		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
+		done = updateSequence(TABLENAME)
+		
+		done = c_charge_acct_insert(1000000)  // "Eigenverbrauch"
+		done = updateSequence_acct(TABLENAME) // tablename ohne acct!
+
 		return null;
 	}
 

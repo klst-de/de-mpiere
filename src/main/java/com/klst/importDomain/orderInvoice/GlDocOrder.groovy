@@ -406,6 +406,22 @@ SELECT * FROM c_charge_acct
 		done = c_charge_acct_insert(1000000)  // "Eigenverbrauch"
 		done = updateSequence_acct(TABLENAME) // tablename ohne acct!
 
+		// siehe https://projects.klst.com/issues/1543 : Feld: GoB: Deutsches HGB, Steuerkorrektur: Abschreibung und Rabatt
+		// TAXCORRECTIONTYPE_Write_OffAndDiscount = "B"
+		// c_period_id = 1000086 // 2018-03
+		TABLENAME = "c_acctschema"
+		update_sql = """
+UPDATE ${TABLENAME} set name = 'SKR03client HGB/Euro' 
+, description = 'SKR03client GoB:Deutsches HGB currency:Euro'
+, gaap = 'DE'
+. c_period_id = 1000086
+, period_openhistory = 90
+, period_openfuture = 0
+, taxcorrectiontype = 'B'
+ WHERE ad_client_id=1000000;
+"""
+		done = doSql(update_sql)
+			  	  
 		return null;
 	}
 

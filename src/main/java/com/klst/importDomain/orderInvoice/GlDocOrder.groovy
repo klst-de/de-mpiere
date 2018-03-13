@@ -243,6 +243,12 @@ UPDATE ${TABLENAME} SET c_doctype_id=1000039 WHERE ad_client_id=1000000 AND c_do
 		done = doSql(update_sql)
 
 		done = doctypes()
+		
+		update_sql = """
+UPDATE ${TABLENAME} set IsCreateCounter = 'N' WHERE ad_client_id=1000000;
+"""
+		done = doSql(update_sql) // siehe https://projects.klst.com/issues/1541 : "Gegenbeleg erstellen" bei allen Belegarten ausschalten
+			
 		// TODO ad_printformat
 
 		TABLENAME = "c_activity"   

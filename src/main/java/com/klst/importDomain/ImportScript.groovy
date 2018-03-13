@@ -23,8 +23,8 @@ class ImportScript extends Script {
 	public ImportScript(Binding binding) {
 		super(binding);
 		println "${CLASSNAME}:ctor binding"
-//		def db = [url:'jdbc:postgresql://localhost/adempiere_390lts', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
-		def db = [url:'jdbc:postgresql://localhost/ad_39'           , user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
+		def db = [url:'jdbc:postgresql://localhost/adempiere_390lts', user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
+//		def db = [url:'jdbc:postgresql://localhost/ad_39'           , user:'adempiere', password:'adempiere', driver:'org.postgresql.Driver']
 		try {
 			sqlInstance = Sql.newInstance(db.url, db.user, db.password, db.driver)
 		} catch (Exception e) {

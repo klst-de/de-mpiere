@@ -414,7 +414,7 @@ SELECT * FROM c_charge_acct
 UPDATE ${TABLENAME} set name = 'SKR03client HGB/Euro' 
 , description = 'SKR03client GoB:Deutsches HGB currency:Euro'
 , gaap = 'DE'
-. c_period_id = 1000086
+, c_period_id = 1000086
 , period_openhistory = 90
 , period_openfuture = 0
 , taxcorrectiontype = 'B'

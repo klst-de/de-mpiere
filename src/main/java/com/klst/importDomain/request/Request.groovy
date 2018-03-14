@@ -114,12 +114,24 @@ in GlDocOrder.groovy:  c_invoicerequest_id numeric(10,0), REFERENCES mierp001.c_
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		
 		TABLENAME = "ad_archive"
+		def delete_sql = """
+DELETE FROM ${DEFAULT_FROM_SCHEMA}.${TABLENAME} 
+ WHERE ad_client_id=1000000
+ AND ad_archive_id IN( 1000212,1000404,1001793 )
+"""
+		done = doSql(delete_sql)
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "ad_attachment"
+		delete_sql = """
+DELETE FROM ${DEFAULT_FROM_SCHEMA}.${TABLENAME} 
+ WHERE ad_client_id=1000000
+ AND ad_attachment_id IN( 1000001,1000011,1000136,1002501 )
+"""
+		done = doSql(delete_sql)
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"

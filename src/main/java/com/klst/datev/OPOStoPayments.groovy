@@ -999,7 +999,8 @@ class SKR03 extends Script {
 		return (it>=8730 && it<=8749) || (it>=3730 && it<=3749)
 	}
 	static def isBank = { it ->
-		return (it>=1100 && it<=1130) || (it>=1200 && it<=1250) // Postbank || Bank 
+		// 14.Mar.2018 : Petra Held, ttp: 1590 ist wie Bank, nur es liegt noch kein Rechnungsbeleg vor
+		return (it>=1100 && it<=1130) || (it>=1200 && it<=1250) || it==1590 // Postbank || Bank || Durchlaufende Posten
 	}
 	static def isWriteOff = { it ->
 		return it==2309

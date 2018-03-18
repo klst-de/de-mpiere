@@ -262,20 +262,51 @@ WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND is
   AND dateinvoiced between ? and ?
   AND docstatus IN('CO','CL','${docStatus3}')
 """
+		if(issotrx=='N') { // wg. https://projects.klst.com/issues/1510#note-8
+			sql = """
+SELECT * FROM ${tableName}
+WHERE ( ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND isactive = 'Y'
+  AND issotrx = '${issotrx}'
+  AND dateinvoiced between ? and ?
+  AND docstatus IN('CO','CL','${docStatus3}')
+) OR C_Invoice_id IN( 
+	SELECT record_id FROM ad_attachment
+	WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND isactive = 'Y'
+	  AND ad_table_id in(select ad_table_id from ad_table where tablename='${tableName}')
+	  AND updated between ? and ?
+	  AND record_id in ( 
+		SELECT C_Invoice_id FROM C_Invoice
+		WHERE ad_client_id = ${ad_client_id} AND ad_org_id IN( 0 , ${ad_org_id} ) AND isactive = 'Y'
+		  AND issotrx = '${issotrx}'
+		  AND dateinvoiced < ?
+		  AND docstatus IN('CO','CL','${docStatus3}')
+		)
+)
+"""
+		}
 		def pstmt = null
 		println "${CLASSNAME}:getInvoices ${sql} 1:${dateFrom} 2:${dateTo}"
 		pstmt = DB.prepareStatement(sql, trxName)
 		def nDateFrom = 1
 		def nDateTo = 2
+		def nDateFromAtt = 3
+		def nDateToAtt = 4
 		if(dateFrom>dateTo) { // dateFrom + dateTo vertauschen
 			addMsg("WARN DateRange FROM ${dateFrom} TO ${dateTo} : From>To (adjusted)")
 			nDateFrom = 2
 			nDateTo = 1
+			nDateFromAtt = 4
+			nDateToAtt = 3
 		} else {
 			addMsg("INFO DateRange FROM ${dateFrom} TO ${dateTo}")
 		}
 		pstmt.setTimestamp(nDateFrom, dateFrom)
 		pstmt.setTimestamp(nDateTo, dateTo)
+		if(issotrx=='N') { // die weiteren params
+			pstmt.setTimestamp(nDateFromAtt, dateFrom)
+			pstmt.setTimestamp(nDateToAtt, dateTo)
+			pstmt.setTimestamp(5, (dateFrom>dateTo ? dateTo : dateFrom))
+		}
 		def resultSet = pstmt.executeQuery()
 		def obj = null
 		def result = [] // List of invoices

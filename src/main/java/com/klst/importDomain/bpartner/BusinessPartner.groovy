@@ -221,6 +221,55 @@ WHERE o.ad_client_id=1000000
 """
 		done = doSql(ad_user_update_sql)
 		
+		// wg Feature #1556 : contactlimitation nach notificationtype Abbilden
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='B'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='B' )
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='N'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='C' )
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='X'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='D' )
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='P'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='E' )
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='M'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='M' )
+"""
+		done = doSql(ad_user_update_sql)
+		
+		ad_user_update_sql = """
+UPDATE ad_user o
+SET notificationtype='A'
+WHERE o.ad_client_id=1000000
+AND o.AD_User_ID in( select AD_User_ID from mierp001.AD_User where contactlimitation='A' )
+"""
+		done = doSql(ad_user_update_sql)
+
 		TABLENAME = "c_bp_relation" // c_bp_relation.name character varying(60) NOT NULL >>> muss auf 255
 		rows = n_live_tup[TABLENAME]
 		done = doInsert(TABLENAME) 

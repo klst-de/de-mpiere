@@ -143,6 +143,56 @@ DELETE FROM ${DEFAULT_FROM_SCHEMA}.${TABLENAME}
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 
+		// wg. https://projects.klst.com/issues/1020#note-3
+		TABLENAME = "ad_searchdefinition"
+		def insert_sql = """
+INSERT INTO ${DEFAULT_TO_SCHEMA}.${TABLENAME} ( 
+  ad_client_id,
+  ad_column_id,
+  ad_org_id,
+  ad_searchdefinition_id,
+  ad_table_id,
+  ad_window_id,
+  created,
+  createdby,
+  datatype,
+  description,
+  isactive,
+  name,
+  query,
+  searchtype,
+  transactioncode,
+  updated,
+  updatedby,
+  po_window_id,
+  isdefault
+)
+    select 
+  ad_client_id,
+  ad_column_id,
+  ad_org_id,
+  ad_searchdefinition_id,
+  ad_table_id,
+  ad_window_id,
+  created,
+  createdby,
+  datatype,
+  description,
+  isactive,
+  name,
+  query,
+  searchtype,
+  transactioncode,
+  updated,
+  updatedby,
+  po_window_id,
+  isdefault
+      from ${DEFAULT_FROM_SCHEMA}.${TABLENAME}
+     WHERE ad_searchdefinition_id>=1000000		
+"""
+		done = doSql(insert_sql)
+		done = updateSequence(TABLENAME)
+		
 		return null;	
 	}
 

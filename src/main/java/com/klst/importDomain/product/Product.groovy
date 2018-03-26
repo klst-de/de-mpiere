@@ -224,6 +224,14 @@ WHERE ad_client_id=1000000
 """
 		done = doSql(sql)
 		
+		// Belegnummernkreis AD_Sequence ist nicht gesetzt 
+		sql = """
+UPDATE AD_Sequence
+   SET currentnext = ( select currentnext from mierp001.AD_Sequence WHERE ad_client_id=1000000 AND AD_Sequence_ID=546129 )
+WHERE ad_client_id=1000000 AND AD_Sequence_ID=1000130
+"""
+		done = doSql(sql)
+		
 //		TABLENAME = "m_product_po"
 //		rows = n_live_tup[TABLENAME]
 //		done = doInsert(TABLENAME)

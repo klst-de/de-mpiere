@@ -142,9 +142,6 @@ public class MOrderItem extends MOrderLine {
 		
 		product.setIsDropShip(MOrder.ISDROPSHIP);
 		
-		// mierp-Besonderheit:
-		product.set_ValueOfColumnReturningBoolean(MProduct.COLUMNNAME_priceso, pricepp);
-		product.set_ValueOfColumnReturningBoolean(MProduct.COLUMNNAME_vendor_id, dropShipBPartner_ID);
 		product.saveEx(this.get_TrxName());
 		
 		

@@ -149,15 +149,6 @@ public class CreateProductProcess extends SvrProcess {
 		return src.renameTo(tgt);
 	}
 	
-//	private static XmlReader reader = null;
-//	
-//	protected XmlReader getXmlReader() {
-//		if(reader==null) {
-//			reader = XmlReader.newInstance();
-//		}
-//		return reader;
-//	}
-	
 	protected Transformer transformer; // ein Singleton
 	
 	/**
@@ -174,17 +165,6 @@ public class CreateProductProcess extends SvrProcess {
 	 * @return opentrans-pojo ORDER-Objektnetz
 	 */
 	protected ORDER unmarshal(String uri) {
-//		XmlReader reader = getXmlReader();
-//		ORDER order = null;
-//		try {
-//			Document doc = reader.read(uri);
-//			Node o = reader.getOrder(doc);
-//			order = (ORDER)reader.unmarshal(o, ORDER.class);
-//		} catch (Exception e) {
-//			log.warning(e.getMessage());
-//			throw new AdempiereException("NO opentrans-ORDER in "+uri );
-//		}
-//		return order;
 		ORDER order = null;
 		OPENTRANS ot;
 		try {
@@ -220,6 +200,7 @@ public class CreateProductProcess extends SvrProcess {
 				ret = ""+newProducts+ " new Product(s) in ORDERID="+order.getORDERHEADER().getORDERINFO().getORDERID();
 		} catch (Exception e) {
 			log.warning(e.getMessage());
+//			e.printStackTrace();
 			throw new AdempiereException(e.getMessage() + " in "+uri );
 		}
 		
@@ -299,9 +280,6 @@ public class CreateProductProcess extends SvrProcess {
 			product.setIsDropShip(MOrder.ISDROPSHIP);
 			product.setIsStocked(false); // alle SOE-Produkte werden als "nicht lagerhaltig" definiert 
 			
-			// mierp-Besonderheit:
-			product.set_ValueOfColumnReturningBoolean(MProduct.COLUMNNAME_priceso, pricepp);
-			product.set_ValueOfColumnReturningBoolean(MProduct.COLUMNNAME_vendor_id, dropShipBPartner_ID);
 			product.saveEx(this.get_TrxName());
 			
 			// pPO: auf mierp darf es nur einen geben!

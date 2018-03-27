@@ -59,13 +59,6 @@ public class MProduct extends org.compiere.model.MProduct {
 
 	private static final long serialVersionUID = -5583599285660100390L;
 
-	// mierp Besonderheiten siehe de.metas.minhoff.model.I_M_Product in mi67_ad:
-	public static final String COLUMNNAME_m_priceunit_id = "m_priceunit_id";
-	public static final String COLUMNNAME_priceso = "priceso";
-	public static final String COLUMNNAME_pricepo = "pricepo";
-	public static final String COLUMNNAME_vendor_name = "vendor_name";
-	public static final String COLUMNNAME_vendor_id = "vendor_id";
-
 	private static final String SQL_PRODUCT_CAT = "SELECT * FROM m_product_category"
 			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND isdefault='Y' ";
 	private PreparedStatement pstmtProductCat; 
@@ -80,13 +73,9 @@ public class MProduct extends org.compiere.model.MProduct {
 			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND isdefault='Y' ";
 	private PreparedStatement pstmtTaxDefalutCat; 
 	
-//	private static final String SQL_SOPRICELIST = "SELECT m_pricelist_id FROM m_pricelist"
-//			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND isdefault='Y' AND issopricelist='Y'";
-//	private static final String SQL_SOPRICELISTVERSION = "SELECT * FROM m_pricelist_version"
-//			+ " WHERE isactive='Y' AND m_pricelist_id in (" + SQL_SOPRICELIST + ")";
-	// auf mierp:
 	private static final String SQL_SOPRICELISTVERSION = "SELECT * FROM m_pricelist_version"
-			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND isdefaultsoprice='Y' ";
+			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND m_pricelist_id IN "
+			+ "(select m_pricelist_id FROM m_pricelist WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND issopricelist='Y') ";
 	private PreparedStatement pstmtPricelistVersion;  
 	
 	// ctor
@@ -173,6 +162,8 @@ public class MProduct extends org.compiere.model.MProduct {
 		try {
 			pstmtPricelistVersion.setInt(1, Env.getAD_Client_ID(this.getCtx()));
 			pstmtPricelistVersion.setInt(2, Env.getAD_Org_ID(this.getCtx()));
+			pstmtPricelistVersion.setInt(3, Env.getAD_Client_ID(this.getCtx()));
+			pstmtPricelistVersion.setInt(4, Env.getAD_Org_ID(this.getCtx()));
 			rs = pstmtPricelistVersion.executeQuery();
 			if(rs.next()) {
 				plv = new MPriceListVersion(this.getCtx(), rs, this.get_TrxName());

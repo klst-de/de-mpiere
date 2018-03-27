@@ -59,8 +59,9 @@ public class MOrder extends org.compiere.model.MOrder {
 	private PreparedStatement pstmtOtOrder; // sucht den Auftrag
 	private List<MOrder> existingOrders = null; // Suchergebnisse
 	
+	// isdefault nicht in AD39
 	private static final String SQL_SHIPPER_DEFAULT = "SELECT * FROM m_shipper"
-			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND isdefault='Y' ";
+			+ " WHERE isactive='Y' AND ad_client_id = ? AND ad_org_id IN( 0, ? ) AND name like 'Standard%' ";
 	private PreparedStatement pstmtDefalutShipper; 
 	
 	private static final String SQL_CUSTOMER = "SELECT c_bpartner_id FROM c_bpartner"
@@ -166,6 +167,7 @@ public class MOrder extends org.compiere.model.MOrder {
 		if(otInvoice_recipient.equalsIgnoreCase(otSupplier)) { 
 			otInvoice_recipient = deliverynote==null ? otDelivery : deliverynote;
 		}
+		this.setDocStatus(DOCSTATUS_Drafted);
 	}
 
 	/*
@@ -282,16 +284,16 @@ public class MOrder extends org.compiere.model.MOrder {
 
 		this.setPOReference(this.otInfo.getORDERID());
 		this.setDateOrdered(this.otDateordered.getTimestamp());
-		//this.setReceivedVia(String receivedVia) ist in interface de.metas.adempiere.model.I_C_Order definiert
-		// aber nirgends implementiert, wg Idee von WIL hier via OPENTRANS einzutragen
+		// wg Idee von WIL hier openTRANS eintragen:
+		this.setC_OrderSource_ID(1000000);
 		
 		// Delivery:
 		// wg. Validation failed - Auftrag null darf nicht als Streckengeschõft markiert werden
 		this.setM_Warehouse_ID(this.getDropShip_Warehouse_ID());
 		this.setIsDropShip(ISDROPSHIP);
 		this.setDropShip_BPartner_ID(dropShipBPartner_ID);	
-		this.setDeliveryRule(DELIVERYRULE_Manual); // "Liefersrt"
-		this.setDeliveryViaRule(DELIVERYVIARULE_Shipper); // "Lieferung durch"
+		this.setDeliveryRule(DELIVERYRULE_Manual); // "Liefersrt" Manual
+		this.setDeliveryViaRule(DELIVERYVIARULE_Shipper); // "Lieferung durch S=Shipper/Standard - Frei Haus, D=Delivery/Versand"
 		this.setM_Shipper_ID(this.getDefaultShipper().get_ID());
 		
 		// Invoicing:

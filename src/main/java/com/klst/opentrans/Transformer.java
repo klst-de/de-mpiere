@@ -153,56 +153,53 @@ public class Transformer {
 	}
 
 // -----------------
-	private static final String SOE_XML = "SOE-order_FH_31234_8566_2014-09-09-0.724.xml";
-	private static final String DISPATCHNOTIFICATION_XML = "DESADV_13080388-8662.xml";
-
-	public static void main(String[] args) {
-		LOG.info("main");
-		
-		//System.setProperty("jaxp.debug","1"); // liefert:
-/*
-JAXP: find factoryId =javax.xml.parsers.SAXParserFactory
-JAXP: loaded from fallback value: com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl
-JAXP: created new instance of class com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl using ClassLoader: null
- */
-		Transformer transformer = new Transformer();
-		String uri = "src/test/resources/"+SOE_XML;
-		
-		try {
-			Source xmlFile = new StreamSource(new File(uri));
-			Validator validator = transformer.getSchemaValidator();
-			validator.validate(xmlFile);
-		} catch (Exception e) {	
-			LOG.severe(e.getMessage());
-		}
-
-		LOG.info("\ncheck transformer.toModel");
-		OPENTRANS ot;
-		try {
-			File file = new File(uri);
-			InputStream is = new FileInputStream(file);
-			ot = transformer.toModel(is);
-			ORDER order = ot.getORDER();
-			LOG.info("order.Version="+order.getVersion());
-			LOG.info("order...ORDERID="+order.getORDERHEADER().getORDERINFO().getORDERID());
-			LOG.info("order.ORDERITEMLIST.size="+order.getORDERITEMLIST().getORDERITEM().size());
-			LOG.info("order...TOTALITEMNUM="+order.getORDERSUMMARY().getTOTALITEMNUM());
-		} catch (Exception e) {
-			LOG.severe(e.getMessage());
-		}
-		
-		try {
-			File file = new File("src/test/resources/"+DISPATCHNOTIFICATION_XML);
-			InputStream is = new FileInputStream(file);
-			DISPATCHNOTIFICATION avis = transformer.toAvis(is);
-			LOG.info("avis.Version="+avis.getVersion());
+//	private static final String SOE_XML = "SOE-order_FH_31234_8566_2014-09-09-0.724.xml";
+//	private static final String DISPATCHNOTIFICATION_XML = "DESADV_13080388-8662.xml";
+//
+//	public static void main(String[] args) {
+//		LOG.info("main");
+//		
+//		//System.setProperty("jaxp.debug","1"); // liefert:
+///*
+//JAXP: find factoryId =javax.xml.parsers.SAXParserFactory
+//JAXP: loaded from fallback value: com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl
+//JAXP: created new instance of class com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl using ClassLoader: null
+// */
+//		Transformer transformer = new Transformer();
+//		String uri = "src/test/resources/"+SOE_XML;
+//		
+//		try {
+//			Source xmlFile = new StreamSource(new File(uri));
+//			Validator validator = transformer.getSchemaValidator();
+//			validator.validate(xmlFile);
+//		} catch (Exception e) {	
+//			LOG.severe(e.getMessage());
+//		}
+//
+//		LOG.info("\ncheck transformer.toModel");
+//		OPENTRANS ot;
+//		try {
+//			File file = new File(uri);
+//			InputStream is = new FileInputStream(file);
+//			ot = transformer.toModel(is);
+//			ORDER order = ot.getORDER();
+//			LOG.info("order.Version="+order.getVersion());
 //			LOG.info("order...ORDERID="+order.getORDERHEADER().getORDERINFO().getORDERID());
 //			LOG.info("order.ORDERITEMLIST.size="+order.getORDERITEMLIST().getORDERITEM().size());
 //			LOG.info("order...TOTALITEMNUM="+order.getORDERSUMMARY().getTOTALITEMNUM());
-		} catch (Exception e) {
-			e.printStackTrace();
-			LOG.severe(e.getMessage());
-		}
-	}
-
+//		} catch (Exception e) {
+//			LOG.severe(e.getMessage());
+//		}
+//		
+//		try {
+//			File file = new File("src/test/resources/"+DISPATCHNOTIFICATION_XML);
+//			InputStream is = new FileInputStream(file);
+//			DISPATCHNOTIFICATION avis = transformer.toAvis(is);
+//			LOG.info("avis.Version="+avis.getVersion());
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			LOG.severe(e.getMessage());
+//		}
+//	}
+//
 }

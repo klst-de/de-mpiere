@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
-import javax.inject.Singleton;
-
 import org.adempiere.exceptions.AdempiereException;
 import org.bmecat.bmecat._2005.DESCRIPTIONSHORT;
 import org.compiere.model.MProductPO;
@@ -31,13 +29,10 @@ import org.opentrans.xmlschema._2.ORDERITEM;
 import org.opentrans.xmlschema._2.PRODUCTID;
 import org.opentrans.xmlschema._2.PRODUCTPRICEFIX;
 import org.opentrans.xmlschema._2.TAXDETAILSFIX;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 import com.klst.opentrans.MOrder;
 import com.klst.opentrans.MProduct;
 import com.klst.opentrans.MUoM;
-//import com.klst.opentrans.XmlReader; // wird durch Transformer ersetzt
 import com.klst.opentrans.Transformer;
 
 public class CreateProductProcess extends SvrProcess {

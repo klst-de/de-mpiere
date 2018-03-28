@@ -11,8 +11,6 @@ import java.util.Properties;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.bmecat.bmecat._2005.DESCRIPTIONSHORT;
-import org.compiere.model.CalloutOrder;
-import org.compiere.model.GridTab;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MProductPO;
 import org.compiere.model.MProductPrice;

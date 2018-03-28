@@ -18,16 +18,12 @@ import org.compiere.process.DocAction;
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATION;
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATIONITEM;
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATIONITEMLIST;
-import org.opentrans.xmlschema._2.OPENTRANS;
 import org.opentrans.xmlschema._2.ORDERREFERENCE;
 import org.opentrans.xmlschema._2.PRODUCTID;
-import org.w3c.dom.Document;
 
+import com.klst.opentrans.DATETIME;
 import com.klst.opentrans.MOrder;
 import com.klst.opentrans.MUoM;
-import com.klst.opentrans.DATETIME;
-//import com.klst.opentrans.XmlReader; // wird durch Transformer ersetzt
-import com.klst.opentrans.Transformer;
 
 /*
  * wird nicht von SvrProcess abgeleitet, da mit CreateProductProcess vieles gemeinsam genutzt wird

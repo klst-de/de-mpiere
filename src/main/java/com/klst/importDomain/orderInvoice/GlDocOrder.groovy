@@ -422,6 +422,32 @@ UPDATE ${TABLENAME} set name = 'SKR03client HGB/Euro'
 """
 		done = doSql(update_sql)
 			  	  
+		TABLENAME = "c_ordersource"  //wg. https://projects.klst.com/issues/1000
+		def insert_sql = """
+INSERT INTO ${TABLENAME}
+(
+  c_ordersource_id,
+  ad_client_id,
+  ad_org_id,
+  createdby,
+  updatedby,
+  value,
+  name,
+  description
+) VALUES (
+1000000,
+${DEFAULT_CLIENT_ID},
+1000000,
+${SUPER_USER_ID},
+${SUPER_USER_ID},
+'openTRANS',
+'openTRANS',
+'Auftrag kam vom WEB-Shop via openTRANS'
+)
+"""
+		done = doSql(insert_sql)
+		done = updateSequence(TABLENAME)
+
 		return null;
 	}
 

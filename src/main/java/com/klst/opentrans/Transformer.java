@@ -22,6 +22,7 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
+import org.opentrans.xmlschema._2.DISPATCHNOTIFICATION;
 import org.opentrans.xmlschema._2.OPENTRANS;
 import org.opentrans.xmlschema._2.ORDER;
 import org.xml.sax.SAXException;
@@ -67,13 +68,32 @@ public class Transformer {
 			throw new TransformationException(MARSHALLING_ERROR, e);
 		}
 	}
-
 	
 	@SuppressWarnings("unchecked")
 	public OPENTRANS toModel(File file) {
 		try {
 			Unmarshaller unmarshaller = createUnmarshaller();
 			return ((JAXBElement<OPENTRANS>) unmarshaller.unmarshal(file)).getValue();
+		} catch (JAXBException e) {
+			throw new TransformationException(MARSHALLING_ERROR, e);
+		}
+	}
+
+	public DISPATCHNOTIFICATION toAvis(InputStream xmlInputStream) {
+		LOG.info("toModel returns OPENTRANS Object from xmlInputStream="+xmlInputStream);
+		try {
+			Unmarshaller unmarshaller = createUnmarshaller();
+			return unmarshaller.unmarshal(new StreamSource(xmlInputStream), DISPATCHNOTIFICATION.class).getValue();
+		} catch (JAXBException e) {
+			throw new TransformationException(MARSHALLING_ERROR, e);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public DISPATCHNOTIFICATION toAvis(File file) {
+		try {
+			Unmarshaller unmarshaller = createUnmarshaller();
+			return ((JAXBElement<DISPATCHNOTIFICATION>) unmarshaller.unmarshal(file)).getValue();
 		} catch (JAXBException e) {
 			throw new TransformationException(MARSHALLING_ERROR, e);
 		}
@@ -168,6 +188,19 @@ JAXP: created new instance of class com.sun.org.apache.xerces.internal.jaxp.SAXP
 			LOG.info("order.ORDERITEMLIST.size="+order.getORDERITEMLIST().getORDERITEM().size());
 			LOG.info("order...TOTALITEMNUM="+order.getORDERSUMMARY().getTOTALITEMNUM());
 		} catch (Exception e) {
+			LOG.severe(e.getMessage());
+		}
+		
+		try {
+			File file = new File("src/test/resources/"+DISPATCHNOTIFICATION_XML);
+			InputStream is = new FileInputStream(file);
+			DISPATCHNOTIFICATION avis = transformer.toAvis(is);
+			LOG.info("avis.Version="+avis.getVersion());
+//			LOG.info("order...ORDERID="+order.getORDERHEADER().getORDERINFO().getORDERID());
+//			LOG.info("order.ORDERITEMLIST.size="+order.getORDERITEMLIST().getORDERITEM().size());
+//			LOG.info("order...TOTALITEMNUM="+order.getORDERSUMMARY().getTOTALITEMNUM());
+		} catch (Exception e) {
+			e.printStackTrace();
 			LOG.severe(e.getMessage());
 		}
 	}

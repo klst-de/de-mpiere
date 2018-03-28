@@ -2,6 +2,7 @@ package com.klst.opentrans.process;
 
 import java.io.InputStream;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.compiere.model.MUOM;
 import org.compiere.process.DocAction;
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATION;
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATIONITEM;
+import org.opentrans.xmlschema._2.DISPATCHNOTIFICATIONITEMLIST;
 import org.opentrans.xmlschema._2.OPENTRANS;
 import org.opentrans.xmlschema._2.ORDERREFERENCE;
 import org.opentrans.xmlschema._2.PRODUCTID;
@@ -35,24 +37,10 @@ import com.klst.opentrans.Transformer;
 public class DispatchNotificationProcess extends CreateProductProcess {
 	
 	private DISPATCHNOTIFICATION unmarshalAvis(String uri) {
-//		XmlReader reader = getXmlReader();
-//		DISPATCHNOTIFICATION avis = null;
-//		try {
-//			InputStream is = new AvisPipedInputStream(uri);
-//			Document doc = reader.parseDocument(is);
-//			avis = (DISPATCHNOTIFICATION)reader.unmarshal(doc, DISPATCHNOTIFICATION.class);
-//		} catch (Exception e) {
-//			log.warning(e.getMessage());
-//			throw new AdempiereException("NO opentrans-DISPATCHNOTIFICATION in "+uri );
-//		}
-//		return avis;
-		
 		DISPATCHNOTIFICATION avis = null;
-		OPENTRANS ot;
 		try {
 			InputStream is = new AvisPipedInputStream(uri);
-			ot = transformer.toModel(is);
-			avis = ot.getDISPATCHNOTIFICATION();
+			avis = transformer.toAvis(is);
 		} catch (Exception e) {
 			log.warning(e.getMessage());
 			throw new AdempiereException("NO opentrans-DISPATCHNOTIFICATION in "+uri );
@@ -218,7 +206,9 @@ public class DispatchNotificationProcess extends CreateProductProcess {
 	 */
 	private Map<String,MOrder> processItems(DISPATCHNOTIFICATION avis) {
 		Map<String,MOrder> mOrder = new HashMap<String,MOrder>();
-		this.avisItems = avis.getDISPATCHNOTIFICATIONITEMLIST().getDISPATCHNOTIFICATIONITEM();
+		DISPATCHNOTIFICATIONITEMLIST dnlist = avis.getDISPATCHNOTIFICATIONITEMLIST();
+		
+		this.avisItems = dnlist==null ? new ArrayList<DISPATCHNOTIFICATIONITEM>() : dnlist.getDISPATCHNOTIFICATIONITEM();
 		log.info("Avis Date="+avis.getDISPATCHNOTIFICATIONHEADER().getDISPATCHNOTIFICATIONINFO().getDISPATCHNOTIFICATIONDATE()
 				+" #Items="+avisItems.size()
 				);

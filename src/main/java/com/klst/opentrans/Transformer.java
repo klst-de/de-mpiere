@@ -3,7 +3,6 @@ package com.klst.opentrans;
 import static javax.xml.bind.JAXBContext.newInstance;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.logging.Logger;
@@ -16,7 +15,6 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -24,7 +22,6 @@ import javax.xml.validation.Validator;
 
 import org.opentrans.xmlschema._2.DISPATCHNOTIFICATION;
 import org.opentrans.xmlschema._2.OPENTRANS;
-import org.opentrans.xmlschema._2.ORDER;
 import org.xml.sax.SAXException;
 
 @Named
@@ -80,11 +77,12 @@ public class Transformer {
 	}
 
 	public DISPATCHNOTIFICATION toAvis(InputStream xmlInputStream) {
-		LOG.info("toModel returns OPENTRANS Object from xmlInputStream="+xmlInputStream);
+		LOG.info("returns OPENTRANS Object from xmlInputStream="+xmlInputStream);
 		try {
 			Unmarshaller unmarshaller = createUnmarshaller();
 			return unmarshaller.unmarshal(new StreamSource(xmlInputStream), DISPATCHNOTIFICATION.class).getValue();
 		} catch (JAXBException e) {
+			LOG.warning(e.getMessage());
 			throw new TransformationException(MARSHALLING_ERROR, e);
 		}
 	}
@@ -154,7 +152,7 @@ public class Transformer {
 
 // -----------------
 //	private static final String SOE_XML = "SOE-order_FH_31234_8566_2014-09-09-0.724.xml";
-//	private static final String DISPATCHNOTIFICATION_XML = "DESADV_13080388-8662.xml";
+//	private static final String DISPATCHNOTIFICATION_XML = "3123400_DESADV_16209630.xml";
 //
 //	public static void main(String[] args) {
 //		LOG.info("main");
@@ -196,10 +194,13 @@ public class Transformer {
 //			InputStream is = new FileInputStream(file);
 //			DISPATCHNOTIFICATION avis = transformer.toAvis(is);
 //			LOG.info("avis.Version="+avis.getVersion());
+//			LOG.info("avis.DISPATCHNOTIFICATIONHEADER="+avis.getDISPATCHNOTIFICATIONHEADER());
+//			LOG.info("avis.DISPATCHNOTIFICATIONITEMLIST="+avis.getDISPATCHNOTIFICATIONITEMLIST());
+//			LOG.info("avis.DISPATCHNOTIFICATIONSUMMARY.TOTALITEMNUM="+avis.getDISPATCHNOTIFICATIONSUMMARY().getTOTALITEMNUM());
 //		} catch (Exception e) {
 //			e.printStackTrace();
 //			LOG.severe(e.getMessage());
 //		}
 //	}
-//
+
 }

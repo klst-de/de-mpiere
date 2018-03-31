@@ -39,6 +39,7 @@ public class DispatchNotificationProcess extends CreateProductProcess {
 			avis = transformer.toAvis(is);
 		} catch (Exception e) {
 			log.warning(e.getMessage());
+			e.printStackTrace();
 			throw new AdempiereException("NO opentrans-DISPATCHNOTIFICATION in "+uri );
 		}
 		return avis;
@@ -105,10 +106,37 @@ public class DispatchNotificationProcess extends CreateProductProcess {
 				MOrderLine oLine = oLines[i];
 				String key = Integer.toString(oLine.getLine());
 				mOrderLine.put(key, oLine);
+				log.info("mOrderLine Line="+key + " oLine: "+oLine );
 			}
 			/*
 			 * in opentrans-2.0.jar gibt es kein 'ARTICLE_ID', daher:
 [Error] :57:16: cvc-complex-type.2.4.a: Invalid content was found starting with element 'ARTICLE_ID'. One of '{"http://www.opentrans.org/XMLSchema/2.0fd":PRODUCT_ID}' is expected.
+
+Es gibt Fälle, wo die Rererenz zu ORDER LINE nicht Integer ist:
+	<DISPATCHNOTIFICATION_ITEM_LIST> ...
+		<DISPATCHNOTIFICATION_ITEM>
+			<LINE_ITEM_ID>2.1</LINE_ITEM_ID>
+			<ARTICLE_ID>
+				<SUPPLIER_AID>106145390</SUPPLIER_AID>
+				<INTERNATIONAL_AID type="EAN">4018474515056
+				</INTERNATIONAL_AID>
+				<BUYER_AID type=" " />
+			</ARTICLE_ID>
+			<QUANTITY>1</QUANTITY>
+			<ORDER_UNIT>PK</ORDER_UNIT>
+			<ORDER_REFERENCE>
+				<ORDER_ID>12260</ORDER_ID>
+				<LINE_ITEM_ID>2.1</LINE_ITEM_ID>              <============ orderRef.getLINEITEMID();
+			</ORDER_REFERENCE>
+			<SUPPLIER_ORDER_REFERENCE>
+				<SUPPLIER_ORDER_ID>9642824</SUPPLIER_ORDER_ID>
+				<SUPPLIER_ORDER_ITEM_ID>2.1</SUPPLIER_ORDER_ITEM_ID>
+			</SUPPLIER_ORDER_REFERENCE>
+			<PACKAGE_INFO>
+				<PACKAGE_ID>50562549651</PACKAGE_ID>
+			</PACKAGE_INFO>
+		</DISPATCHNOTIFICATION_ITEM>
+
 			 * 
 			 * zwei Listen avisItems und avisItemsDone:
 			 * avisItems initial befüllt mit Aviszeilen
@@ -122,6 +150,12 @@ public class DispatchNotificationProcess extends CreateProductProcess {
 				PRODUCTID productId = item.getPRODUCTID();
 				//MOrder order = mOrder.get(orderRef.getORDERID());
 				String key = orderRef.getLINEITEMID();
+				// key kann decimal sein! 2.1 statt 2 !!!
+				Number num = parse(key);
+				if(num instanceof Float) {
+					log.warning("LINE_ITEM_ID is not int: "+key + " trying to approximate.");
+					key = Integer.toString(num.intValue());
+				}
 				MOrderLine oLine = mOrderLine.get(key);
 				MUoM mUoM = new MUoM(this.getCtx(), oLine.getC_UOM_ID(), this.get_TrxName());
 				MUOM unit = MUoM.getOrCreate(this.getCtx(), item.getORDERUNIT(), this.get_TrxName());
@@ -184,6 +218,20 @@ public class DispatchNotificationProcess extends CreateProductProcess {
 		return ret;
 	}
 
+	private static Number parse(String str) {
+	    Number number = null;
+	    try {
+	    	number = Integer.parseInt(str);
+	    } catch(NumberFormatException e) {
+	        try {
+	        	number = Float.parseFloat(str);
+	        } catch(NumberFormatException e1) {
+	        	throw e1;
+	        }       
+	    }
+	    return number;
+	}
+	
 	private DATETIME otDate = null;
 	
 	/*

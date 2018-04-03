@@ -152,7 +152,7 @@ public class Transformer {
 
 // -----------------
 //	private static final String SOE_XML = "SOE-order_FH_31234_8566_2014-09-09-0.724.xml";
-//	private static final String DISPATCHNOTIFICATION_XML = "3123400_DESADV_16209630.xml";
+//	private static final String DISPATCHNOTIFICATION_XML = "3123400_DESADV_16209630-original.xml";
 //
 //	public static void main(String[] args) {
 //		LOG.info("main");
@@ -190,8 +190,9 @@ public class Transformer {
 //		}
 //		
 //		try {
-//			File file = new File("src/test/resources/"+DISPATCHNOTIFICATION_XML);
-//			InputStream is = new FileInputStream(file);
+////			File file = new File("src/test/resources/"+DISPATCHNOTIFICATION_XML);
+////			InputStream is = new FileInputStream(file);
+//			InputStream is = new AvisPipedInputStream("src/test/resources/"+DISPATCHNOTIFICATION_XML);
 //			DISPATCHNOTIFICATION avis = transformer.toAvis(is);
 //			LOG.info("avis.Version="+avis.getVersion());
 //			LOG.info("avis.DISPATCHNOTIFICATIONHEADER="+avis.getDISPATCHNOTIFICATIONHEADER());

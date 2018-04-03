@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -139,8 +138,8 @@ public class AvisPipedInputStream extends PipedInputStream {
 			line = line.concat("\n");
 			bytes = this.charsetName==null ? line.getBytes() : line.getBytes(charsetName); 
 //			// #343 test
-//			if(line.contains("ß")) {
-//				log.info(line);
+//			if(line.contains("ü")) {
+//				log.info(line+" charsetName="+charsetName+" line.length()="+line.length()+" bytes.length="+bytes.length);
 //				for(int i=0; i<bytes.length; i++) {
 //					//sb.append(String.format("%02X ", b));
 //					log.info("i="+i + " byte="+bytes[i] + " ="+String.format("%02X",bytes[i]));
@@ -156,7 +155,7 @@ public class AvisPipedInputStream extends PipedInputStream {
 	public synchronized int read() throws IOException {
 		if(line==null)
 			return -1;
-		if(pos==line.length()) {
+		if(pos==bytes.length) {
 			if(nextline()<0) 
 				return -1;
 		}

@@ -448,6 +448,25 @@ ${SUPER_USER_ID},
 		done = doSql(insert_sql)
 		done = updateSequence(TABLENAME)
 
+		// wg. https://projects.klst.com/issues/1606 
+		update_sql = """
+UPDATE AD_Sequence
+SET currentnext = ( select currentnext from mierp001.AD_Sequence where AD_Sequence_ID=546137 )
+WHERE AD_Sequence_ID=1000093
+"""
+		done = doSql(update_sql)
+		update_sql = """
+UPDATE C_DocType 
+SET IsDocNoControlled='Y'
+  , Description='imported from mierp001 + Ticket https://projects.klst.com/issues/1606'
+  , DocNoSequence_ID=1000093
+  , Updated=TO_TIMESTAMP('2018-04-06 12:23:20','YYYY-MM-DD HH24:MI:SS')
+  , UpdatedBy=100 
+WHERE C_DocType_ID=1000005 
+"""
+		done = doSql(update_sql)
+		
+		
 		return null;
 	}
 

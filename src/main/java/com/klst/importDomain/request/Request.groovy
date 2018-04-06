@@ -126,10 +126,11 @@ DELETE FROM ${DEFAULT_FROM_SCHEMA}.${TABLENAME}
 		done = updateSequence(TABLENAME)
 		
 		TABLENAME = "ad_attachment"
+		// metas mierp001-cockpit (540060) attachments dürfen nicht importiert werden, wg. Fremdschlüssel-Constraint
 		delete_sql = """
 DELETE FROM ${DEFAULT_FROM_SCHEMA}.${TABLENAME} 
  WHERE ad_client_id=1000000
- AND ad_attachment_id IN( 1000001,1000011,1000136,1002501 )
+ AND ad_table_id=(540060)
 """
 		done = doSql(delete_sql)
 		rows = n_live_tup[TABLENAME]

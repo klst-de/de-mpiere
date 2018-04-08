@@ -249,7 +249,6 @@ public class MOrder extends org.compiere.model.MOrder {
 			
 			int orderLineID = getOrderLineID(this, Integer.parseInt(item.getLINEITEMID())); 
 			MOrderItem oi = new MOrderItem(this, item, orderLineID, dropShipBPartner_ID);
-			MProduct p = oi.mapProduct();
 			
 			oi.setQty(item.getQUANTITY());	
 			
@@ -260,10 +259,6 @@ public class MOrder extends org.compiere.model.MOrder {
 					+" order.PriceList="+this.getM_PriceList_ID()
 					+" order.isSOTrx="+this.isSOTrx()
 					);
-//			oi.setPrice(otPrice.getPRICEAMOUNT()); // Use this Method if the Line UOM is the Product UOM 
-			
-//			oi.setPriceActual(otPrice.getPRICEAMOUNT()); // (actual price is not updateable)
-//			oi.setTax();
 			
 			oi.saveEx(this.get_TrxName());
 		}

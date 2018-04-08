@@ -469,17 +469,6 @@ public class MOrder extends org.compiere.model.MOrder {
 		if(DOCSTATUS_InProgress.equals(this.getDocStatus())) {
 			this.setDocAction(DocAction.ACTION_Complete);
 			this.saveEx(); // kein Unterschied zu saveEx(this.get_TrxName());
-			// die Order landet in Status IT - kann manuell in
-//			if(complete) { // 2-tes complete mit Ziel status = Complete
-//				super.completeIt();
-//				log.info("done completeIt() status="+this.getDocStatus()); 
-////				if(super.processIt(DocAction.ACTION_Complete)) {
-////					log.info("complete DocAction.ACTION_Complete status="+this.getDocStatus()); 
-////				} else {
-////					log.warning("Problem bei complete");
-////				}
-//				this.saveEx();
-//			}
 		}
 		return this.getDocStatus();
 	}
@@ -489,8 +478,7 @@ public class MOrder extends org.compiere.model.MOrder {
 		if(order.existingOrders.size()>0) {
 			order = order.existingOrders.get(0); 
 		} else {
-			// TODO exception ?
-			order = null;
+			throw new AdempiereException("Not found any corresponding order with opentrans ORDER_ID="+otID);
 		}
 		return order;
 	}

@@ -466,6 +466,16 @@ WHERE C_DocType_ID=1000005
 """
 		done = doSql(update_sql)
 		
+		// see https://projects.klst.com/issues/1619#note-1
+		update_sql = """
+UPDATE C_DocType 
+SET IsDefault='Y'
+  , Description='imported from mierp001 (default wg. #1619)'
+  , Updated=TO_TIMESTAMP('2018-04-09 16:38:23','YYYY-MM-DD HH24:MI:SS')
+  , UpdatedBy=100 
+WHERE C_DocType_ID=1000016 
+"""
+		done = doSql(update_sql)
 		
 		return null;
 	}

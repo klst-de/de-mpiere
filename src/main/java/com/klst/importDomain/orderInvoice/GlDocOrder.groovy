@@ -446,6 +446,29 @@ ${SUPER_USER_ID},
 )
 """
 		done = doSql(insert_sql)
+		insert_sql = """
+INSERT INTO ${TABLENAME}
+(
+  c_ordersource_id,
+  ad_client_id,
+  ad_org_id,
+  createdby,
+  updatedby,
+  value,
+  name,
+  description
+) VALUES (
+1000001,
+${DEFAULT_CLIENT_ID},
+1000000,
+${SUPER_USER_ID},
+${SUPER_USER_ID},
+'ITDZorder',
+'ITDZorder',
+'Auftrag von itdz-berlin.de'
+)
+"""
+		done = doSql(insert_sql)
 		done = updateSequence(TABLENAME)
 
 		// wg. https://projects.klst.com/issues/1606 

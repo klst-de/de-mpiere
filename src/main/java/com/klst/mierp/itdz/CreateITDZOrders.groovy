@@ -122,7 +122,7 @@ class CreateITDZOrders extends Script {
 	private static final ITDZ_LOCATION_ID = 1000294 // c_bpartner_location_id
 	private static final ESELLING_ID = 1000452 // ad_user
 	
-	def makeOrder = { poreference, description, dateOrdered, datePromised, bp, cu, trxName=this._TrxName, ctx=this._Ctx ->		
+	def makeOrder = { poreference, description, dateOrdered, datePromised, bp, cu, String trxName=this._TrxName, ctx=this._Ctx ->		
 		def sql = """
 SELECT * FROM c_order
 WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this._pi.getAD_Org_ID()} ) AND isactive = 'Y'
@@ -164,7 +164,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		return [mOrder,true]
 	}
 	
-	def addOrderLine = { order, lineno, productValue, qty, netto, trxName=this._TrxName, ctx=this._Ctx ->
+	def addOrderLine = { order, lineno, productValue, qty, netto, String trxName=this._TrxName, ctx=this._Ctx ->
 		def sql = """
 SELECT * FROM m_product
 WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this._pi.getAD_Org_ID()} ) AND isactive = 'Y'
@@ -207,7 +207,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		return saved
 	}
 		
-	def getBPartner = { likename, trxName=this._TrxName, ctx=this._Ctx ->
+	def getBPartner = { likename, String trxName=this._TrxName, ctx=this._Ctx ->
 // 'Hans-und-Hilde-Coppi-Schule (11Y05)' not found wg (11Y05) "Hans und Hilde Coppi-Gymnasium"
 // 'Lew-Tolstoi Grundschule' nicht gefunden wg "Lew Tolstoi Grundschule" in DB, daher upper-Suche mit like:
 		String uname = likename.toLowerCase().replaceAll("[^\\x61-\\x7A]", "%").toUpperCase()
@@ -245,7 +245,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		return bpList.get(0) // first!
 	}
 	
-	def getContactUser = { bp, telNr, trxName=this._TrxName, ctx=this._Ctx ->
+	def getContactUser = { bp, telNr, String trxName=this._TrxName, ctx=this._Ctx ->
 		String telNo = telNr.replaceAll("[^\\x30-\\x39]", "")
 		def sql = """
 SELECT * FROM ad_user

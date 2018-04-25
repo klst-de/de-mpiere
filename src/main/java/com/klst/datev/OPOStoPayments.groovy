@@ -1,4 +1,4 @@
-// Feat #1417 - Bezahlte Rechnungen datev->AD
+// Feat #1417,#1632 - Bezahlte Rechnungen datev->AD
 package com.klst.datev
 
 import groovy.lang.Binding
@@ -537,36 +537,46 @@ com.klst.datev.OPOStoPayments:makeAPPaymentAllocations alloc f³r paymentList=
 		println "${CLASSNAME}:makeARReceiptAllocations Ausgangsrechnungen und Eingangazahlungen von Kunden"
 		def C_Currency_ID = 102 // EUR
 		def bp = getBPartner(this.getProperty("A_AD_Client_ID"), 1000000, it.kto)
+		BigDecimal tolerance = new BigDecimal(0.025) 
 		if(bp==null) {
 			throw new Exception("aktiven Kunden ${it.kto} nicht gefunden")
 		}
 		it.C_BPartner_ID = bp.getC_BPartner_ID()
 		
-		it.invoiceList.each{ invoice ->
-			def beleg = getInvoice(this.getProperty("A_AD_Client_ID"), 1000000, invoice.rec, 'Y')
-			// check beleg == invoice : bp betrag datum 
-			if(beleg) {
-				C_Currency_ID = beleg.getC_Currency_ID()
-				if(beleg.getC_BPartner().getValue()==it.kto) {
-					// kto == BP.value
+		def invoiceList = [] // each elem with elem.C_Invoice_ID 
+		for(int i=1;i<it.getConsInvoiceList().size();i++) {
+			def invoice = it.getConsInvoiceList()[i]
+			if(new BigDecimal(invoice.amt).abs()>tolerance) { // wg https://projects.klst.com/issues/1632#note-8
+				def beleg = getInvoice(this.getProperty("A_AD_Client_ID"), 1000000, invoice.rec, 'Y')
+				// check beleg == invoice : bp betrag datum
+				if(beleg) {
+					C_Currency_ID = beleg.getC_Currency_ID()
+					if(beleg.getC_BPartner().getValue()==it.kto) {
+						// kto == BP.value
+					} else {
+						throw new Exception("Rechnung ${invoice.rec}: BP ${it.kto} ungleich ${beleg.getC_BPartner()}")
+					}
+					// if ... BigDecimal getGrandTotal(boolean creditMemoAdjusted) {
+					if(beleg.getGrandTotal(true).subtract(invoice.amt).abs()>tolerance) {
+						def diff = beleg.getGrandTotal(true).subtract(invoice.amt)
+						throw new Exception("Rechnung ${invoice.rec}: Betrag ${invoice.amt} ungleich ${beleg} diff=${diff}")
+					}
+					def isPaid = beleg.isPaid()
+					println "${CLASSNAME}:makeARReceiptAllocations Rechnung gefunden ${beleg} isPaid=${isPaid}"
+					if(isPaid) {
+						String rech = invoice.rec
+						String emsg = "Rechnung bereits bezahlt "+rech
+						throw new Exception(emsg)
+					}
+					invoice.put("C_Invoice_ID", beleg.getC_Invoice_ID())
+					invoiceList.add(invoice)
+				} else if(createInvoice) {
+					throw new Exception("Rechnung ${invoice.rec} nicht gefunden **createInvoice** nicht implementiert")
 				} else {
-					throw new Exception("Rechnung ${invoice.rec}: BP ${it.kto} ungleich ${beleg.getC_BPartner()}")
+					throw new Exception("Rechnung ${invoice.rec} nicht gefunden")
 				}
-				// if ... BigDecimal getGrandTotal(boolean creditMemoAdjusted) {
-				if(beleg.getGrandTotal(true).subtract(invoice.amt).abs()>0.015) {
-					throw new Exception("Rechnung ${invoice.rec}: Betrag ${invoice.amt} ungleich ${beleg} diff=${beleg.getGrandTotal(true).subtract(invoice.amt)}")
-				}
-				def isPaid = beleg.isPaid()
-				println "${CLASSNAME}:makeARReceiptAllocations Rechnung gefunden ${beleg} isPaid=${isPaid}"
-				if(isPaid) {
-					//addMsg("bezahlte Rechnung gefunden - ${beleg}")
-					throw new Exception("Rechnung ${invoice.rec} bereits bezahlt - ${beleg}")
-				}
-				invoice.C_Invoice_ID = beleg.getC_Invoice_ID()
-			} else if(createInvoice) {
-				throw new Exception("Rechnung ${invoice.rec} nicht gefunden **createInvoice** nicht implementiert")
-			} else {			
-				throw new Exception("Rechnung ${invoice.rec} nicht gefunden")
+			} else {
+				println "${CLASSNAME}:makeARReceiptAllocations ${invoice.amt} <= ${tolerance}"
 			}
 		}
 		
@@ -578,8 +588,8 @@ com.klst.datev.OPOStoPayments:makeAPPaymentAllocations alloc f³r paymentList=
 			try {
 				def op = it.paymentList[0]
 				def beleg = makeMPayment(op , it.C_BPartner_ID , true) // isReceipt
-				if(it.invoiceList.size()==1) {
-					beleg.setC_Invoice_ID( it.invoiceList[0].get('C_Invoice_ID') )
+				if(invoiceList.size()==1) {
+					beleg.setC_Invoice_ID( invoiceList[0].get('C_Invoice_ID') )
 					beleg.saveEx()
 					def done = beleg.processIt("CO")
 					if(done) {
@@ -591,21 +601,26 @@ com.klst.datev.OPOStoPayments:makeAPPaymentAllocations alloc f³r paymentList=
 					println "${CLASSNAME}:makeARReceiptAllocations save() : ${done}"
 				} else {
 					def alloc = MAllocationHdr.newInstance(this._Ctx, 0, this._TrxName)
-					println "${CLASSNAME}:makeARReceiptAllocations alloc für 1 payment invoiceList=${it.invoiceList}"
+					println "${CLASSNAME}:makeARReceiptAllocations alloc für 1 payment invoiceList=${invoiceList}"
 					alloc.setC_Currency_ID(C_Currency_ID)
 					alloc.saveEx()
 					println "${CLASSNAME}:makeARReceiptAllocations alloc angelegt ${alloc}"
 					BigDecimal oua = new BigDecimal(0).add(op.amt).add(op.dis==null ? 0 : op.dis) // OverUnderAmt
-					it.invoiceList.each{ oi ->
-						def aLine = MAllocationLine.newInstance(alloc) // Parent ctor
-						aLine.setC_Payment_ID(op.get('C_Payment_ID'))
-						aLine.setDocInfo(it.C_BPartner_ID,0,oi.get('C_Invoice_ID')) // 0 == no C_Order_ID
-						aLine.setAmount(oi.amt)
-						aLine.setDiscountAmt(oi.dis)
-						oua = oua.subtract(aLine.getAmount()).subtract(aLine.getDiscountAmt())
-						aLine.setOverUnderAmt(oua)
-						aLine.saveEx()
-						println "${CLASSNAME}:makeAPPaymentAllocations saved - ${aLine}"
+					invoiceList.each{ oi ->
+						def C_Invoice_ID = oi.get('C_Invoice_ID')
+						if(C_Invoice_ID!=null) {
+							def aLine = MAllocationLine.newInstance(alloc) // Parent ctor
+							aLine.setC_Payment_ID(op.get('C_Payment_ID'))
+							aLine.setDocInfo(it.C_BPartner_ID,0,C_Invoice_ID) // 0 == no C_Order_ID
+							aLine.setAmount(oi.amt)
+							aLine.setDiscountAmt(oi.dis)
+							oua = oua.subtract(aLine.getAmount()).subtract(aLine.getDiscountAmt())
+							aLine.setOverUnderAmt(oua)
+							aLine.saveEx()
+							println "${CLASSNAME}:makeAPPaymentAllocations saved - ${aLine}"
+						} else {
+							println "${CLASSNAME}:makeAPPaymentAllocations no 'C_Invoice_ID' for ${oi}"
+						}
 					}
 					// assert oua==0
 					def done = alloc.processIt("CO")
@@ -658,7 +673,7 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 					println "${CLASSNAME}:makeARReceiptAllocations saved - ${aLine}"
 				}
 				// jetzt die rechnungen
-				it.invoiceList.each{ oi ->
+				invoiceList.each{ oi ->
 					def aLine = MAllocationLine.newInstance(alloc) // Parent ctor
 					aLine.setDocInfo(it.C_BPartner_ID,0,oi.get('C_Invoice_ID')) 
 					aLine.setAmount(oi.amt)
@@ -688,6 +703,7 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 		if(!it.isBalanced()) {
 			throw new OPOSexception("not balanced: ${it}")
 		}
+		it.getConsInvoiceList() 
 		try {
 			if(it.isCreditor() && creditor=='Y') {
 				return makeAPPaymentAllocations(it, getPara("CreateCreditorInvoices")=='Y')
@@ -696,8 +712,8 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 				return makeARReceiptAllocations(it, getPara("CreateDebitorInvoices")=='Y')
 			}
 		} catch(Exception e) {
-//			println "${CLASSNAME}:makeAllocations catched e=${e}"
-//			e.printStackTrace()
+			println "${CLASSNAME}:makeAllocations catched e=${e}"
+			e.printStackTrace()
 			addMsg("BP ${it.kto} " + e.getMessage())
 		}
 	}
@@ -795,7 +811,7 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 						} catch(OPOSexception e) {
 							alloc.addPayment(opos.makePayment(kto,r))
 						}
-//						println "${CLASSNAME}:getOpos BP=${alloc.kto} invoices=${alloc.invoiceList} payments=${alloc.paymentList}"
+//						println "${CLASSNAME}:getOpos BP=${alloc.kto} invoices=${alloc.getConsInvoiceList()} payments=${alloc.paymentList}"
 					}
 
 				}
@@ -1185,6 +1201,7 @@ class Allocations extends Script {
 	String kto = null // personenKto
 	def invoiceList = []
 	def paymentList = []
+	def consList = null // consolidated
 	
 	public Allocations() {
 		println "${CLASSNAME}:ctor"
@@ -1201,6 +1218,30 @@ class Allocations extends Script {
 	
 	def addPayment = { it ->
 		paymentList.add(it)
+	}
+
+	// consolidate invoiceList, wg https://projects.klst.com/issues/1632#note-8
+	def getConsInvoiceList = {
+//		println "${CLASSNAME}:getConsInvoiceList invoiceList.size=${this.invoiceList.size()}"
+		if(this.invoiceList.size() <= 1) {
+			return this.invoiceList
+		}
+		if(this.consList!=null) {
+			return this.consList
+		}
+		this.consList = []
+		this.consList.add(this.invoiceList[0])
+		for(int i=1;i<this.invoiceList.size();i++) {
+			if(    this.invoiceList.getAt(i).rec==consList.getAt(0).rec 
+				&& SKR03.isErloesKto(this.invoiceList.getAt(i).kto) && SKR03.isErloesKto(consList.getAt(0).kto)
+				&& this.invoiceList.getAt(i).dat==consList.getAt(0).dat) {
+				consList[0].amt = consList[0].amt + this.invoiceList[i].amt
+			} else {
+				consList.add(this.invoiceList[i])
+			}
+		}
+		println "${CLASSNAME}:getConsInvoiceList consList.size=${consList.size()}: ${this.consList}"
+		return this.consList
 	}
 	
 	def isDebitor = { it=this.kto.toInteger() ->

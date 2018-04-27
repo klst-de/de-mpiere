@@ -1,8 +1,9 @@
-// Feat #1405
+// Feat #1405, #1687
 package com.klst.mierp.itdz
 
 import groovy.lang.Binding
 import groovy.lang.Script
+import java.text.DecimalFormat
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Properties
@@ -158,17 +159,20 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			mOrder.setDeliveryViaRule(X_C_Order.DELIVERYVIARULE_Shipper)
 			mOrder.setM_Shipper_ID(1000000) // == Standard - Frei Haus
 			mOrder.setInvoiceRule(X_C_Order.INVOICERULE_AfterDelivery)
+			mOrder.setC_OrderSource_ID(1000001);  // == "ITDZorder"
 			mOrder.saveEx()	
 		}
 		addMsg("Order ${description} erstellt: DocumentNo=${mOrder.getDocumentNo()}")
 		return [mOrder,true]
 	}
 	
-	def addOrderLine = { order, lineno, productValue, qty, netto, String trxName=this._TrxName, ctx=this._Ctx ->
+	def addOrderLine = { order, pos, productValue, qty, netto, String trxName=this._TrxName, ctx=this._Ctx ->
+		def lineno = getDoubleOrStringToString(pos)
+		def pv = getDoubleOrStringToString(productValue)
 		def sql = """
 SELECT * FROM m_product
 WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this._pi.getAD_Org_ID()} ) AND isactive = 'Y'
-  AND value = '${productValue}-ITDZ'
+  AND value = '${pv}-ITDZ'
 """
 		println "${CLASSNAME}:addOrderLine ${sql}"
 		def pstmt = DB.prepareStatement(sql, trxName)
@@ -182,7 +186,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			}
 		} 
 		if(obj==null) {
-			addMsg("* Position ${lineno} '${productValue}' Produkt nicht gefunden")
+			addMsg("* Position ${lineno} '${pv}' Produkt nicht gefunden")
 			return saved
 		}
 		MOrderLine ol = new MOrderLine(ctx, 0, trxName)
@@ -199,7 +203,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			//println "${CLASSNAME}:addOrderLine OK ${ol}"
 		} else {
 			println "${CLASSNAME}:addOrderLine NOK ${ol} ${netto} <> ${ol.getLineNetAmt()} ${bigDecimalnetto.subtract(ol.getLineNetAmt())}"
-			addMsg("* Position ${lineno} '${productValue}' überprüfen")
+			addMsg("* Position ${lineno} '${pv}' überprüfen")
 			ol.setDescription("Position überprüfen")
 			ol.saveEx()
 			saved = false
@@ -302,9 +306,9 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 	
 	private static final XLSX_EXT = ".xlsx"
 	private static final XLSDIR_TEST = "C:\\proj\\minhoff\\ITDZ-Bestellung\\"
-	def getSheet = { file=this.pXls, workdir=XLSDIR_TEST , initialXls="mehrere" ->
-		def excel = getExcel()
-		def workbook = excel.Workbooks.Open( file , 0 , true) // open ro
+	def getSheet = { excel, file=this.pXls ->
+		println "${CLASSNAME}:getSheet ${file}"
+		def workbook = excel.Workbooks.Open(file, 0 , true) // open ro
 		def sheets = workbook.Worksheets
 		println "${CLASSNAME}:getSheet sheets.Count=${sheets.Count}"
 		try {
@@ -316,7 +320,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			throw e
 		}
 	}
-	
+
 	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
 //		SimpleDateFormat dateFormat = new SimpleDateFormat(format)
 //		Date parsedDate = dateFormat.parse(it, new ParsePosition(0))
@@ -327,12 +331,13 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		return new java.sql.Timestamp(it.getTime())
 	}
 
+	// to get BELEGNUMMER or MATERTAL ...
 	def getDoubleOrStringToString = { it
 		if(it==null) {
 			return null
 		}
 		if(it instanceof Double) {
-			return String.valueOf(it)
+			return new DecimalFormat("#############").format(it)
 		} else {
 			return it.trim()
 		}
@@ -396,9 +401,8 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 				def adr1 = range.Item(r,LIEFERADR1).Value
 				MBPartner bp = getBPartner(adr1)
 				MUser contactUser = getContactUser(bp, range.Item(r,LIEFERADRTEL).Value)
-				def desc = range.Item(r,EKG).Value+'-'+range.Item(r,BELEGNUMMER).Value+'-'+range.Item(r,VERTR_BEL).Value // zu lang >20 für poreference
-				String poreference = belegnummer
-				makeResult = makeOrder(poreference,desc,belegdat,liefdat,bp,contactUser)
+				def desc = range.Item(r,EKG).Value+'-'+belegnummer+'-'+range.Item(r,VERTR_BEL).Value // zu lang >20 für poreference
+				makeResult = makeOrder(belegnummer,desc,belegdat,liefdat,bp,contactUser)
 				orderList.add(makeResult.get(0)) // [order,isNew]
 			}
 			if(makeResult.get(1)) {
@@ -417,15 +421,20 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 	@Override
 	public Object run() {
 		println "${CLASSNAME}:run"
+		def excel = getExcel()
+		def sheet = null
 		if(isProcess()) try {
-			def sheet = getSheet()
+			sheet = getSheet(excel)
 			addMsg("excel gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
 		    def orderList = []	// empty
 			getOrders(sheet,orderList)
 			addMsg("${orderList.size} Order.")
 		} catch(ComFailException e) {
+			excel.Workbooks.Close()
 			return e.getMessage()
 		}
+		println "${this.msg}"
+		excel.Workbooks.Close()
 		return this.msg
 	}
 	

@@ -1,4 +1,4 @@
-// Feat #1405, #1687
+// Feat #1405, #1687 : 08.05.2018
 package com.klst.mierp.itdz
 
 import groovy.lang.Binding
@@ -320,7 +320,10 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			throw e
 		}
 	}
-
+	def getFilePath = { file=this.pXls ->
+		return file
+	}
+		
 	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
 //		SimpleDateFormat dateFormat = new SimpleDateFormat(format)
 //		Date parsedDate = dateFormat.parse(it, new ParsePosition(0))
@@ -425,7 +428,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		def sheet = null
 		if(isProcess()) try {
 			sheet = getSheet(excel)
-			addMsg("excel gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
+			addMsg("excel ${getFilePath()} gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
 		    def orderList = []	// empty
 			getOrders(sheet,orderList)
 			addMsg("${orderList.size} Order.")

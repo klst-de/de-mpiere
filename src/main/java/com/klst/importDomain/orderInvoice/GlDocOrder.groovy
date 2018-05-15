@@ -345,7 +345,16 @@ and ref_orderline_id not in(select c_orderline_id from mierp001.c_orderline) -- 
 
 		TABLENAME = "c_invoiceline" 
 		rows = n_live_tup[TABLENAME]
-		done = doInsert(TABLENAME,["m_attributesetinstance_id"]) // m_attributesetinstance wird nicht importiert
+		//done = doInsert(TABLENAME,["m_attributesetinstance_id"]) // m_attributesetinstance wird nicht importiert
+		// wg. https://projects.klst.com/issues/1710 : taxamtinfo (metas) muss nach taxamt
+		def insert_sql = """
+INSERT INTO ${TABLENAME} 
+           ( c_invoiceline_id,  ad_client_id,  ad_org_id,  isactive,  created,  createdby,  updated,  updatedby,  c_invoice_id,  c_orderline_id,  m_inoutline_id,  line,  description,  m_product_id,  qtyinvoiced,  pricelist,  priceactual,  pricelimit,  linenetamt,  c_charge_id,  c_uom_id,  c_tax_id,  s_resourceassignment_id,  a_asset_id,  taxamt    , m_attributesetinstance_id,  isdescription,  isprinted,  linetotalamt,  ref_invoiceline_id,  processed,  qtyentered,  priceentered,  c_project_id,  c_projectphase_id,  c_projecttask_id,  rrstartdate,  rramt,  c_campaign_id,  c_activity_id,  user1_id,  user2_id,  ad_orgtrx_id,  m_rmaline_id,  a_createasset,  a_processed,  a_capvsexp,  a_asset_group_id ) 
+    select m.c_invoiceline_id,m.ad_client_id,m.ad_org_id,m.isactive,m.created,m.createdby,m.updated,m.updatedby,m.c_invoice_id,m.c_orderline_id,m.m_inoutline_id,m.line,m.description,m.m_product_id,m.qtyinvoiced,m.pricelist,m.priceactual,m.pricelimit,m.linenetamt,m.c_charge_id,m.c_uom_id,m.c_tax_id,m.s_resourceassignment_id,m.a_asset_id,m.taxamtinfo, null                     ,m.isdescription,m.isprinted,m.linetotalamt,m.ref_invoiceline_id,m.processed,m.qtyentered,m.priceentered,m.c_project_id,m.c_projectphase_id,m.c_projecttask_id,m.rrstartdate,m.rramt,m.c_campaign_id,m.c_activity_id,m.user1_id,m.user2_id,m.ad_orgtrx_id,m.m_rmaline_id,m.a_createasset,m.a_processed,m.a_capvsexp,m.a_asset_group_id 
+      from mierp001.c_invoiceline AS m
+     WHERE m.ad_client_id=1000000
+"""
+		done = doSql(insert_sql)
 		println "${CLASSNAME}:run ${done} for table ${TABLENAME} rows=${rows}.\n"
 		done = updateSequence(TABLENAME)
 		
@@ -423,7 +432,7 @@ UPDATE ${TABLENAME} set name = 'SKR03client HGB/Euro'
 		done = doSql(update_sql)
 			  	  
 		TABLENAME = "c_ordersource"  //wg. https://projects.klst.com/issues/1000
-		def insert_sql = """
+		insert_sql = """
 INSERT INTO ${TABLENAME}
 (
   c_ordersource_id,

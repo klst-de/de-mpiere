@@ -346,6 +346,7 @@ and ref_orderline_id not in(select c_orderline_id from mierp001.c_orderline) -- 
 		TABLENAME = "c_invoiceline" 
 		rows = n_live_tup[TABLENAME]
 		//done = doInsert(TABLENAME,["m_attributesetinstance_id"]) // m_attributesetinstance wird nicht importiert
+		// wg. https://projects.klst.com/issues/1677 : singlepricetag_id = null
 		// wg. https://projects.klst.com/issues/1710 : taxamtinfo (metas) muss nach taxamt
 		def insert_sql = """
 INSERT INTO ${TABLENAME} 

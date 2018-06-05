@@ -1,4 +1,4 @@
-// Feat #1417,#1632 26.04.2018 - Bezahlte Rechnungen datev->AD
+// Feat #1417,#1632 05.06.2018 - Bezahlte Rechnungen datev->AD
 package com.klst.datev
 
 import groovy.lang.Binding
@@ -969,6 +969,7 @@ class SKR03 extends Script {
 	//      0970 Sonstige Rückstellungen
 	//      0977 Rückstellungen für Abschluss- und Prüfungskosten
 	//      1590 Durchlaufende Posten
+	//      2020 Periodenfremde Aufwendungen
 	//      2309 Sonstige Aufwendungen unregelmäßig (WriteOff/Abschreibung)
 	// Fremdleistungen
 	//   AV 3123 Sonstige Leistungen eines im anderen EU-Land ansässigen Unternehmers 19 % Vorsteuer und 19 % Umsatzsteuer
@@ -1009,7 +1010,7 @@ class SKR03 extends Script {
 		return it>=3100 && it<=3165
 	}
 	static def isAufwendung = { it ->
-		return (it>=3200 && it<=3429) || (it>=4200 && it<=4985)
+		return (it>=3200 && it<=3429) || (it>=4200 && it<=4985) || (it==2020)
 	}
 	static def isBonus = { it ->
 		return (it>=3750 && it<=3769)

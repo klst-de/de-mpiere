@@ -5,8 +5,11 @@
 ## C
 ## D
 
+Datenmodell
+: <br/>[SchemaSpy Analysis of idempiere51.adempiere](https://globalqss.com/idempiere/5.1_20171111/schemaspy/)
+
 DATEV
-: <br/>[s.Kap.3 Koexistenz mit DATEV](3.datev.md)
+: [s.Kap.3 Koexistenz mit DATEV](3.datev.md)
 
 ## E
 ## F
@@ -19,6 +22,10 @@ DATEV
 ## M
 ## N
 ## O
+
+openTRANS
+: <br/>[s.Kap.4 Nutzung von openTRANS](4.opentrans.md)
+
 ## P
 ## Q
 ## R

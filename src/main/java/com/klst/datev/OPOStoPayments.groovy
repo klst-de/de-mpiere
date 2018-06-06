@@ -1,4 +1,4 @@
-// Feat #1417,#1632 05.06.2018 - Bezahlte Rechnungen datev->AD
+// Feat #1417,#1632 06.06.2018 - Bezahlte Rechnungen datev->AD
 package com.klst.datev
 
 import groovy.lang.Binding
@@ -106,13 +106,9 @@ class OPOStoPayments extends Script {
 			println "${CLASSNAME}:isProcess this._pi=${this._pi}"
 			this.paraList = this._pi.getParameters() // liefert MPInstancePara[] 
 			for (para in paraList) {
-				//def v = para.get_Value()
-				println "${CLASSNAME}:isProcess para ${para.getParameterName()}"
-				//this.paraDict.put(para.getParameterName(), v)
-//				if(para.getParameterName()=="FileName") {
-//					this.pXls = para.getP_String()
-//					println "${CLASSNAME}:isProcess ${para.getParameterName()} ${para.getP_String()}"
-//				}
+				def v = para.getP_String() // alle params sind Strings, getP_Number() liefert BigDecimal
+				println "${CLASSNAME}:isProcess para ${para.getParameterName()} value=${v}"
+				this.paraDict.put(para.getParameterName(), v)
 			}
 			DB = this.class.classLoader.loadClass("org.compiere.util.DB", true, false )
 			MBPartner = this.class.classLoader.loadClass("org.compiere.model.MBPartner", true, false )
@@ -124,14 +120,9 @@ class OPOStoPayments extends Script {
 		return ret
 	}
 
+	// get parameter value from map paraDict
 	def getPara = { it ->
-		for (para in paraList) {
-			if(para.getParameterName()==it) {
-//				println "${CLASSNAME}:getPara ${it} ${para.getP_String()}"
-				return para.getP_String()
-			}
-		}
-//		println "${CLASSNAME}:getPara '${it}' nicht gefunden"
+		return this.paraDict.get(it)
 	}
 
 	private static final ACTIVEX_FSO = "Scripting.FileSystemObject"
@@ -585,7 +576,7 @@ com.klst.datev.OPOStoPayments:makeAPPaymentAllocations alloc f³r paymentList=
 			} //for
 		} catch(NotFoundEexception e) { 
 			println "${CLASSNAME}:makeARReceiptAllocations exception ${e}"
-			addMsg("BP ${it.kto} " + e.getMessage()) // TODO
+			addMsg("BP ${it.kto} ${e.getMessage()}")
 			return 0
 		}
 		
@@ -727,12 +718,13 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 		} catch(Exception e) {
 			println "${CLASSNAME}:makeAllocations catched e=${e}"
 			e.printStackTrace()
-			addMsg("BP ${it.kto} " + e.getMessage())
+			addMsg("BP ${it.kto} ${e.getMessage()}")
 		}
+		return null
 	}
 	
-	def getOpos = { sheet ->
-		println "${CLASSNAME}:getOpos UsedRange Rows=${sheet.UsedRange.Rows.Count} Columns=${sheet.UsedRange.Columns.Count}"
+	def getOpos = { sheet , creditor=getPara("Creditor") , debitor=getPara("Debitor") ->
+		println "${CLASSNAME}:getOpos UsedRange Rows=${sheet.UsedRange.Rows.Count} Columns=${sheet.UsedRange.Columns.Count} creditor=${creditor} debitor=${debitor}"
 		if(sheet.UsedRange.Rows.Count>1 && sheet.UsedRange.Columns.Count>=Opos.LASTCOL) {
 			// OK
 		} else {
@@ -850,6 +842,10 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 					println "${CLASSNAME}:getOpos ${e.getMessage()} ** Lieferant **"
 					alloc.setCreditor(kto)
 				}
+				if(alloc.isCreditor() && creditor==null) {
+					println "${CLASSNAME}:getOpos Stopp! erster ** Lieferant **"
+					break forexit					
+				}
 				try {
 					alloc.addInvoice(opos.makeInvoice(kto,r))
 				} catch(OPOSexception e) {
@@ -861,6 +857,7 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 			lastKto = kto
 			lastRec = rec
 		} //for
+		forexit:
 		if(alloc!=null) {
 			println "${CLASSNAME}:getOpos balanced? ${alloc}"
 			def numOfPay = makeAllocations(alloc)
@@ -894,7 +891,7 @@ com.klst.datev.OPOStoPayments:getOpos balanced? [BP:46934
 			println "${CLASSNAME}:run noProcess"
 			sheet = getSheet(excel,"${XLSDIR_TEST}OPOS-2018-01.xlsx")
 		}
-		addMsg("excel gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
+		addMsg("excel ${getPara("FileName")} gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
 		try {
 			getOpos(sheet)			
 		} catch(Exception e) {

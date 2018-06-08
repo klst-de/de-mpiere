@@ -32,12 +32,11 @@ openTRANS
 ## S
 ## T
 
-Toolbar (swing-Client)
-: [siehe idempiere/Toolbar](http://wiki.idempiere.org/de/Toolbar)
+Toolbar
+: [siehe idempiere/Toolbar (swing-Client)](http://wiki.idempiere.org/de/Toolbar)
 ![](http://wiki.idempiere.org/w-de/images/4/4f/Toolbar_-_Window_%28iDempiere_1.0.0%29.png)
 
-Toolbar (web-Client)
-: die Icons im web-Client sehen anders aus
+: die Icons im web-Client sehen anders aus:
 ![](images/Toolbar-web.PNG)
 
 ## U

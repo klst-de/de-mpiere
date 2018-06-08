@@ -1,4 +1,4 @@
-// Feat #1405, #1687 : 08.05.2018
+// Feat #1405, #1687 : 08.06.2018 - Xls to MOrder
 package com.klst.mierp.itdz
 
 import groovy.lang.Binding
@@ -10,15 +10,6 @@ import java.util.Properties
 
 import org.codehaus.groovy.scriptom.ActiveXObject
 import com.jacob.com.ComFailException
-import org.compiere.model.MBPartner
-import org.compiere.model.X_C_Order
-import org.compiere.model.MOrder
-import org.compiere.model.MOrderLine
-import org.compiere.model.MPInstance
-import org.compiere.model.MPInstancePara
-import org.compiere.model.MProduct
-import org.compiere.model.MUser
-import org.compiere.util.DB
 
 
 class CreateITDZOrders extends Script {
@@ -43,7 +34,8 @@ class CreateITDZOrders extends Script {
 	def _Ctx = null // A_Ctx - the context
 	def _TrxName = null // A_TrxName
 	def _pi = null // Object of MPInstance whith A_AD_PInstance_ID
-	def pXls = null
+	def paraList = []
+	def paraDict = [:]
 	def ctx = { return this.getProperty("A_Ctx") }
 	def mapEvent = ["P":"A_Trx","C":"A_WindowNo","L":"A_AD_Org_ID","T":"A_PO"]
 	def tryEvent = { it="eventtype"->
@@ -61,7 +53,7 @@ class CreateITDZOrders extends Script {
 	def eventtype = { it="eventtype"->
 		if(this._isPCLT==null) {
 			try {
-				if(ctx) {
+				if(ctx()) {
 //					println "${CLASSNAME}:${it} A_Ctx - the context: ${ctx()}"
 				} else {
 					this._isPCLT="?"
@@ -82,6 +74,14 @@ class CreateITDZOrders extends Script {
 	def isCallout = { it="C" ->
 		return eventtype()==it
 	}
+	// dynamisch geladene AD Klassen
+	Class MPInstance = null
+	Class DB = null //org.compiere.util.DB
+	Class MBPartner = null
+	Class MOrder = null //org.compiere.model.MOrder
+	Class MOrderLine = null 
+	Class MProduct = null 
+	Class MUser = null
 	def isProcess = { it="P" ->
 		def ret = eventtype()==it
 		if(ret) {
@@ -92,26 +92,37 @@ class CreateITDZOrders extends Script {
  P    A_Record_ID
  P L  A_AD_Client_ID
  P L  A_AD_User_ID
- P    A_AD_PInstance_ID --- hiermit komme ich an AD_Process_ID select * from AD_PInstance ==> class MPInstance
+ P    A_AD_PInstance_ID --- hiermit komme ich an AD_Process_ID: select * from AD_PInstance ==> class MPInstance und die Parameter
  P    A_Table_ID
-  */
-			 
+  */		 
 			this._Ctx = A_Ctx
 			this._TrxName = A_TrxName
 			println "${CLASSNAME}:isProcess A_AD_PInstance_ID: ${A_AD_PInstance_ID}"
-			this._pi = new MPInstance(this._Ctx, A_AD_PInstance_ID, null)
-			println "${CLASSNAME}:isProcess ${this._pi}"
-			MPInstancePara[] paraList = this._pi.getParameters()
-			for (para in paraList) {				
-				println "${CLASSNAME}:isProcess ${para.getParameterName()} ${para.getP_String()}"
-				if(para.getParameterName()=="FileName") {
-					this.pXls = para.getP_String()
-				}
+			MPInstance = this.class.classLoader.loadClass("org.compiere.model.MPInstance", true, false )
+			println "${CLASSNAME}:isProcess MPInstance: ${MPInstance}"
+			this._pi = MPInstance.newInstance(this._Ctx, A_AD_PInstance_ID, "ignored") // letzte para muss String sein
+			println "${CLASSNAME}:isProcess this._pi=${this._pi}"
+			this.paraList = this._pi.getParameters() // liefert MPInstancePara[] 
+			for (para in paraList) {
+				def v = para.getP_String() // alle params sind Strings, getP_Number() liefert BigDecimal
+				println "${CLASSNAME}:isProcess para ${para.getParameterName()} value=${v}"
+				this.paraDict.put(para.getParameterName(), v)
 			}
+			DB = this.class.classLoader.loadClass("org.compiere.util.DB", true, false )
+			MBPartner = this.class.classLoader.loadClass("org.compiere.model.MBPartner", true, false )
+			MOrder = this.class.classLoader.loadClass("org.compiere.model.MOrder", true, false )
+			MOrderLine = this.class.classLoader.loadClass("org.compiere.model.MOrderLine", true, false )
+			MProduct = this.class.classLoader.loadClass("org.compiere.model.MProduct", true, false )
+			MUser = this.class.classLoader.loadClass("org.compiere.model.MUser", true, false )
 		}
 		return ret
 	}
 
+	// get parameter value from map paraDict
+	def getPara = { it ->
+		return this.paraDict.get(it)
+	}
+	
 	def envGetContext = { it , WindowNo=this.getProperty("A_WindowNo") -> //.toInteger() ->
 		String context = "${WindowNo}|${it}"
 		println "${CLASSNAME}:envGetContext result:"+ctx().get(context)
@@ -132,10 +143,10 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		println "${CLASSNAME}:makeOrder ${sql}"
 		def pstmt = DB.prepareStatement(sql, trxName)
 		def resultSet = pstmt.executeQuery()
-		MOrder mOrder = null
+		def mOrder = null
 		if(resultSet) {
 			while(resultSet.next()) {
-				mOrder = new MOrder(ctx, resultSet, trxName)
+				mOrder = MOrder.newInstance(ctx, resultSet, trxName)
 				println "${CLASSNAME}:makeOrder exist ${mOrder}"
 			}
 		}
@@ -143,7 +154,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			addMsg("Order ${description} existiert bereits: ${mOrder}")
 			return [mOrder,false] 
 		} else {
-			mOrder = new MOrder(ctx, 0, trxName)
+			mOrder = MOrder.newInstance(ctx, 0, trxName)
 			mOrder.setC_DocTypeTarget_ID(1000030) // == Standard Order
 			mOrder.setPOReference(poreference)
 			mOrder.setDescription(description)
@@ -154,11 +165,11 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			mOrder.setBill_BPartner_ID(ITDZ_ID)
 			mOrder.setBill_Location_ID(ITDZ_LOCATION_ID)
 			mOrder.setBill_User_ID(ESELLING_ID) // Rechnung an ITDZ.eSelling
-			mOrder.setPaymentRule(X_C_Order.PAYMENTRULE_OnCredit) // Rechnungsstellung
+			mOrder.setPaymentRule(MOrder.PAYMENTRULE_OnCredit) // Rechnungsstellung aus X_C_Order
 			mOrder.setC_PaymentTerm_ID( mOrder.getBill_BPartner().getC_PaymentTerm_ID() ) // Zahlungsbedingung
-			mOrder.setDeliveryViaRule(X_C_Order.DELIVERYVIARULE_Shipper)
+			mOrder.setDeliveryViaRule(MOrder.DELIVERYVIARULE_Shipper)
 			mOrder.setM_Shipper_ID(1000000) // == Standard - Frei Haus
-			mOrder.setInvoiceRule(X_C_Order.INVOICERULE_AfterDelivery)
+			mOrder.setInvoiceRule(MOrder.INVOICERULE_AfterDelivery)
 			mOrder.setC_OrderSource_ID(1000001);  // == "ITDZorder"
 			mOrder.saveEx()	
 		}
@@ -177,21 +188,21 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		println "${CLASSNAME}:addOrderLine ${sql}"
 		def pstmt = DB.prepareStatement(sql, trxName)
 		def resultSet = pstmt.executeQuery()
-		MProduct obj = null
+		def mProduct = null
 		def saved = false
 		if(resultSet) {
 			while(resultSet.next()) { // muss nicht eindeutig sein!
-				obj = new MProduct(ctx, resultSet, trxName)
-				println "${CLASSNAME}:addOrderLine ${obj}"
+				mProduct = MProduct.newInstance(ctx, resultSet, trxName)
+				println "${CLASSNAME}:addOrderLine ${mProduct}"
 			}
 		} 
-		if(obj==null) {
+		if(mProduct==null) {
 			addMsg("* Position ${lineno} '${pv}' Produkt nicht gefunden")
 			return saved
 		}
-		MOrderLine ol = new MOrderLine(ctx, 0, trxName)
+		def ol = MOrderLine.newInstance(ctx, 0, trxName)
 		ol.setLine(Integer.parseInt(lineno))
-		ol.setM_Product_ID(obj.getM_Product_ID())
+		ol.setM_Product_ID(mProduct.getM_Product_ID())
 		ol.setC_Order_ID(order.getC_Order_ID())
 		ol.setQty(qty)
 		if(ol.beforeSave(true)) {
@@ -228,20 +239,20 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		def pstmt = DB.prepareStatement(sql, trxName)
 		def resultSet = pstmt.executeQuery()
 		def bpList = []	// empty
-		MBPartner obj = null
+		def mBPartner = null
 		if(resultSet) {
 			while(resultSet.next()) { // muss nicht eindeutig sein!
-				obj = new MBPartner(ctx, resultSet, trxName)
-				println "${CLASSNAME}:getBPartner ${obj}"
-				bpList.add(obj)
+				mBPartner = MBPartner.newInstance(ctx, resultSet, trxName)
+				println "${CLASSNAME}:getBPartner ${mBPartner}"
+				bpList.add(mBPartner)
 			}
 		}  
 		if(bpList.isEmpty()) {
 			println "${CLASSNAME}:getBPartner keinen Partner gefunden für '${likename}'"
 			addMsg("keinen Partner zum Liefern gefunden für '${likename}' - ersatzweise ITDZ")
 			// nehme ITDZ
-			obj = new MBPartner(ctx, ITDZ_ID, trxName)
-			bpList.add(obj)
+			mBPartner = MBPartner.newInstance(ctx, ITDZ_ID, trxName)
+			bpList.add(mBPartner)
 		} else if(bpList.size()>1) {
 			println "${CLASSNAME}:getBPartner mehrere Partner gefunden für '${likename}'"
 			// Eindeutigkeit
@@ -261,10 +272,10 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		def resultSet = pstmt.executeQuery()
 		def urList = []	// empty
 		def zentrale = []
-		MUser obj = null
+		def obj = null // MUser
 		if(resultSet) {
 			while(resultSet.next()) { // muss nicht eindeutig sein!
-				obj = new MUser(ctx, resultSet, trxName)
+				obj = MUser.newInstance(ctx, resultSet, trxName)
 				def phone = obj.getPhone()
 				println "${CLASSNAME}:getContactUser ${obj} phone=${phone}"
 				if(phone==null) {
@@ -285,7 +296,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		if(urList.intersect(zentrale).size()<=1) {
 			if(zentrale.size==0) {
 				addMsg("no contactUser with phone '${telNr}' - ersatzweise ITDZ")
-				return new MUser(ctx, ESELLING_ID, trxName)
+				return MUser.newInstance(ctx, ESELLING_ID, trxName)
 			}
 			obj = zentrale.get(0)
 			return obj 
@@ -304,9 +315,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		return objExcel
 	}
 	
-	private static final XLSX_EXT = ".xlsx"
-	private static final XLSDIR_TEST = "C:\\proj\\minhoff\\ITDZ-Bestellung\\"
-	def getSheet = { excel, file=this.pXls ->
+	def getSheet = { excel, file=getPara("FileName") ->
 		println "${CLASSNAME}:getSheet ${file}"
 		def workbook = excel.Workbooks.Open(file, 0 , true) // open ro
 		def sheets = workbook.Worksheets
@@ -319,9 +328,6 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 			println "${CLASSNAME}:getSheet cannot find sheet"
 			throw e
 		}
-	}
-	def getFilePath = { file=this.pXls ->
-		return file
 	}
 		
 	def toTimestamp = { it, format="EEE MMM dd hh:mm:ss zzz yyyy" ->
@@ -394,7 +400,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 				return
 			} else {
 				if(!makeResult.isEmpty() && makeResult.get(1)) {
-					addMsg("Order mit ${posCnt} Positionen fertiggestellt, weitere Order vorhanden ...")
+					addMsg("Order mit ${posCnt} Positionen erstellt, weitere Order vorhanden ...")
 					makeResult = []
 					posCnt = 0
 				}
@@ -402,8 +408,8 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 				println "${CLASSNAME}:getOrders Belegnummer=${range.Item(r,BELEGNUMMER).Value} Lieferdat=${range.Item(r,LIEFERADR1).Value} ${belegdat}"
 				def liefdat= toTimestamp(range.Item(r,LIEFDAT).Value)
 				def adr1 = range.Item(r,LIEFERADR1).Value
-				MBPartner bp = getBPartner(adr1)
-				MUser contactUser = getContactUser(bp, range.Item(r,LIEFERADRTEL).Value)
+				def bp = getBPartner(adr1)
+				def contactUser = getContactUser(bp, range.Item(r,LIEFERADRTEL).Value)
 				def desc = range.Item(r,EKG).Value+'-'+belegnummer+'-'+range.Item(r,VERTR_BEL).Value // zu lang >20 für poreference
 				makeResult = makeOrder(belegnummer,desc,belegdat,liefdat,bp,contactUser)
 				orderList.add(makeResult.get(0)) // [order,isNew]
@@ -428,7 +434,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		def sheet = null
 		if(isProcess()) try {
 			sheet = getSheet(excel)
-			addMsg("excel ${getFilePath()} gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
+			addMsg("excel ${getPara("FileName")} gelesen - ${sheet.UsedRange.Rows.Count} Zeilen")
 		    def orderList = []	// empty
 			getOrders(sheet,orderList)
 			addMsg("${orderList.size} Order.")

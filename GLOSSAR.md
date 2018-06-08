@@ -6,7 +6,7 @@
 ## D
 
 Datenmodell
-: <br/>[SchemaSpy Analysis of idempiere51.adempiere](https://globalqss.com/idempiere/5.1_20171111/schemaspy/)
+: [siehe SchemaSpy Analysis of idempiere51.adempiere](https://globalqss.com/idempiere/5.1_20171111/schemaspy/)
 
 DATEV
 : [s.Kap.3 Koexistenz mit DATEV](3.datev.md)
@@ -24,13 +24,22 @@ DATEV
 ## O
 
 openTRANS
-: <br/>[s.Kap.4 Nutzung von openTRANS](4.opentrans.md)
+: [s.Kap.4 Nutzung von openTRANS](4.opentrans.md)
 
 ## P
 ## Q
 ## R
 ## S
 ## T
+
+Toolbar (swing-Client)
+: [siehe idempiere/Toolbar](http://wiki.idempiere.org/de/Toolbar)
+![](http://wiki.idempiere.org/w-de/images/4/4f/Toolbar_-_Window_%28iDempiere_1.0.0%29.png)
+
+Toolbar (web-Client)
+: die Icons im web-Client sehen anders aus
+![](images/Toolbar-web.PNG)
+
 ## U
 ## V
 ## W

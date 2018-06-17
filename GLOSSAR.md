@@ -26,12 +26,12 @@ Menü Icons
 
 ![](images/Menu-purchase-DE.PNG)
 
-|_. swing |_. web |_. Name |_. Beschreibung |
-| ![](images/icons/menuSwing/mWindow.png) | ![](images/icons/menuWeb/mWindow.png) | Transaktionsfenster | ... |
-| ![](images/icons/menuSwing/mProcess.png) | ![](images/icons/menuWeb/mProcess.png) | Prozess | ... |
-| ![](images/icons/menuSwing/mReport.png) | ![](images/icons/menuWeb/mReport.png) | Report/Bericht | ... |
+| **_swing_**                               | **_web_**                               | **_Name_** | **_Beschreibung_** |
+| ![](images/icons/menuSwing/mWindow.png)   | ![](images/icons/menuWeb/mWindow.png)   | Transaktionsfenster | ... |
+| ![](images/icons/menuSwing/mProcess.png)  | ![](images/icons/menuWeb/mProcess.png)  | Prozess | ... |
+| ![](images/icons/menuSwing/mReport.png)   | ![](images/icons/menuWeb/mReport.png)   | Report/Bericht | ... |
 | ![](images/icons/menuSwing/mWorkFlow.png) | ![](images/icons/menuWeb/mWorkFlow.png) | Workflow | ... |
-| ![](images/icons/menuSwing/TreeLeaf.gif) | ![](images/icons/menuWeb/TreeLeaf.gif) | Browser | ... icon fehlt |
+| ![](images/icons/menuSwing/TreeLeaf.gif)  | ![](images/icons/menuWeb/TreeLeaf.gif)  | Browser | ... icon fehlt |
 
 ## N
 ## O

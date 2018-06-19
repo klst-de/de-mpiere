@@ -3,7 +3,6 @@ package com.klst.mierp.process;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,12 +17,11 @@ import org.compiere.model.MOrderLine;
 import org.compiere.model.MOrgInfo;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductPO;
-import org.compiere.model.MProductionPlan;
+import org.compiere.model.MProductionBatch;
 import org.compiere.model.MUser;
-import org.compiere.model.X_M_Production;
-import org.compiere.model.X_M_ProductionPlan;
 import org.compiere.process.DocAction;
 import org.compiere.util.AdempiereUserError;
+import org.compiere.util.Env;
 import org.eevolution.model.MPPProductBOM;
 import org.eevolution.model.MPPProductBOMLine;
 
@@ -37,14 +35,10 @@ die Klasse ist als client Prozess und als Erweiterung des Standard-wf Process_Or
  Parameter: C_Order_ID Auftrag für den die notwendigen Bestellungen vorgenommen werden
             Die Bestellungen werden für alle Auftragspositionen, auch für BOM-Komponenten, erstellt
  
-Der Prozess wurde ursprünglich für ITDZ-Aufträge als MeetOrderRequisition konzipiert: Bill_BPartner==ITDZ_BPartner_ID
-
 Einige Lieferanten wurden von den Bestellungen ausgenommen (excludedVendors)
  ==> "keine Bestellung für "+mProduct + " (Lagerware) Lieferant "+vendor
 Für diese Lieferanten werden künftig Bestellungen mit Mindestmenge generiert,
 dazu ist aber eine funktionierende Bestandsführung notwendig.
-
-Produktion prodHeader+prodPlan werden vorbereitet 
 
  */
 public class OrderPOCreate extends SvrWfProcess {
@@ -57,11 +51,13 @@ public class OrderPOCreate extends SvrWfProcess {
 	private static final int ZEPPELIN_Warehouse_ID = 1000002;
 	private static final int ZEPPELIN_Locator_ID = 1000002;
 	private static final int OPD_Locator_ID = 1000003; // vorest! vll spendieren wir ein Ausliefer-Lagerort
+	private static final int DOCBASETYPE_MPO_ID = 1000047; // DOCBASETYPE_ManufacturingPlannedOrder = "MPO";
 
 	private MOrder mOrder;
 	private Map<Integer, MOrder> bestellungen = null; // key vendor_id
 	private List<Integer> excludedVendors = null; // vendor_id für die keine Bestellungen vorbereitet werden
 	private List<Integer> excludedProducts = null; // product_id für die keine Bestellungen vorbereitet werden (initial leer)
+	private List<MProductionBatch> lProductionBatch = null;
 
 	// Parameter:
 	protected int p_C_Order_ID = -1;
@@ -71,34 +67,9 @@ public class OrderPOCreate extends SvrWfProcess {
 		super();
 		this.bestellungen = new HashMap<Integer, MOrder>();
 		this.excludedProducts = new ArrayList<Integer>();
-		this.excludedVendors = new ArrayList<Integer>();
-		
-		/* die rechts markierten Lieferanten werden von Bestellungen ausgenommen:
-		 36518; 1;"70375";"70375";"Ingram Micro Distribution GmbH"
-		 36863; 1;"70813";"70813";"MEDIUM GmbH"
-		 39102; 1;"83007";"83007";"Tech Data GmbH & Co. oHG"
-		 37111; 1;"71067";"71067";"OBETA ELEKTRO SB"               nein
-		 38536; 1;"72504";"72504";"Optoma Deutschland GmbH"        nein
-		1000052;2;"73024";"73024";"Remonta GmbH"                   nein
-		 38645; 3;"72613";"72613";"Kramer Germany GmbH"            nein
-		 39032; 4;"73005";"73005";"digitalequipment"               nein
-		 38867; 5;"72835";"72835";"Nedis GmbH"                       - Kabel
-		 39023; 6;"72996";"72996";"PureLink GmbH"                    - Kabel
-		 38976; 7;"72947";"72947";"BÜROPARTNER - Mediasprint"        - Pylone
-		 37008;12;"70962";"70962";"Fröhlich & Walter GmbH"           - Kabel
-		 38624;12;"72592";"72592";"Kern & Stelly"
-		 38333;31;"72300";"72300";"Info Tech 24 GmbH"
-		 */
+		this.excludedVendors = new ArrayList<Integer>();		
 		// TODO besser: Produkte sind auf Lager mit einem Mindestbestand : M_Replenish
-//		excludedVendor(37111);  
-//		excludedVendor(38536);  
-//		excludedVendor(1000052);  
-//		excludedVendor(38645);  
-//		excludedVendor(39032);  
-//		excludedVendor(38867); // Kabel
-//		excludedVendor(39023); // Kabel
-//		excludedVendor(37008); // Kabel 
-//		excludedVendor(38976); // Pylone etc 
+		this.lProductionBatch = new ArrayList<MProductionBatch>();	
 	}
 	
 	protected void excludedVendor(int vendor_id) {
@@ -135,17 +106,27 @@ public class OrderPOCreate extends SvrWfProcess {
 		return bomSet.size();
 	}
 	
-	private X_M_Production productionHeader = null;
-	private X_M_Production createProduction() {
-		log.info("start productionHeader="+productionHeader);
-		if(productionHeader==null) {
-			productionHeader = new X_M_Production(getCtx(), 0, get_TrxName());
-			productionHeader.setName(this.mOrder.getDocumentNo()+" (ITDZ)");
-			productionHeader.setDescription("for "+this.mOrder.getC_BPartner());
-			productionHeader.setMovementDate(this.mOrder.getDatePromised());
-			productionHeader.save(get_TrxName());
-		}
-		return productionHeader;
+	private MProductionBatch createProduction(MProduct mProduct, BigDecimal targetQty) {
+		log.info("for mProduct:"+mProduct);
+		MProductionBatch mProductionBatch = new MProductionBatch(getCtx(), 0, get_TrxName());
+		
+		mProductionBatch.setC_DocType_ID(DOCBASETYPE_MPO_ID); 
+		mProductionBatch.setM_Product_ID(mProduct.getM_Product_ID());
+		
+		// liefert org.adempiere.exceptions.PeriodClosedException: Periode geschlossen Datum=2018-07-05 00:00:00.0, Basisbelegart=Arbeitsauftrag
+		// wenn MovementDate in der Zukunft liegt:
+//		mProductionBatch.setMovementDate(this.mOrder.getDatePromised());
+		
+		mProductionBatch.setDescription(""+this.mOrder + " for "+this.mOrder.getC_BPartner());
+		mProductionBatch.setM_Locator_ID(ZEPPELIN_Locator_ID);
+		mProductionBatch.setTargetQty(targetQty);
+		// initialWerte
+		mProductionBatch.setQtyOrdered(Env.ZERO);
+		mProductionBatch.setCountOrder(0);
+		mProductionBatch.setQtyCompleted(Env.ZERO);
+		
+		mProductionBatch.save(get_TrxName());
+		return mProductionBatch;
 	}
 
 
@@ -242,18 +223,18 @@ public class OrderPOCreate extends SvrWfProcess {
 					bomSet = new HashSet<MPPProductBOMLine>(); 
 					if(explosion(bom)>0) {
 						
-						// prodHeader + prodPlan
-						X_M_Production prodHeader = createProduction();
-						X_M_ProductionPlan prodPlan = new X_M_ProductionPlan(getCtx(), 0, get_TrxName());
-						prodPlan.setM_Production_ID(prodHeader.getM_Production_ID());
-						prodPlan.setLine(mOrderLine.getLine());
-						prodPlan.setM_Product_ID(mProduct.getM_Product_ID());
-						prodPlan.setProductionQty(mOrderLine.getQtyOrdered());
-						prodPlan.setM_Locator_ID(OPD_Locator_ID);
-						prodPlan.setDescription("generiert via "+getClass());
-						prodPlan.save(get_TrxName());
-						setMsg("ProductionPlan vorbereitet für Multiprodukt "+mProduct);
-						// 
+						try {
+							MProductionBatch pb = createProduction(mProduct,mOrderLine.getQtyOrdered());
+							if(pb.processIt("CO")) { // Complete
+								setMsg("ProductionPlan fertiggestellt für Multiprodukt "+mProduct);
+							} else {
+								setMsg("ProductionPlan vorbereitet für Multiprodukt "+mProduct);
+								lProductionBatch.add( pb );
+							}
+							pb.save();
+						} catch(Exception e) {
+							return raiseError(e.getMessage(),"***"); 
+						}
 
 						for(Iterator<MPPProductBOMLine> it = bomSet.iterator(); it.hasNext(); ) { 
 							MPPProductBOMLine mBOMLine = it.next();
@@ -292,39 +273,14 @@ public class OrderPOCreate extends SvrWfProcess {
 		}
 
 		log.info(this.getMsg());
-		if(productionHeader==null) {
-			// nix tun, da keine Produktion angelegt
-		} else { // prodProcess starten, damit die Produktions-Positionen befüllt werden
-			M_Production_Run prodProcess = new M_Production_Run();
-			prodProcess.setCtx(this.getCtx());
-			prodProcess.setTrxName(this.get_TrxName());
-			prodProcess.setRecord_ID(productionHeader.getM_Production_ID());
-			String ret = prodProcess.doIt();
-			if("@OK@".equals(ret)) {
-				setMsg("ProductionPlan-Positionen mit BOM Daten befüllt");
-			} else {
-				setMsg("prodProcess meldet "+ret);
-			}
-			
-			Collection<MOrder> bestgen = bestellungen.values(); // alle bestellungen als Collection
-			List<MProductionPlan> lines = prodProcess.getProdPlanLines(productionHeader.getM_Production_ID());
-//			for (X_M_ProductionPlan prodPlan :lines) {
-//				List<X_M_ProductionLine> prodLines = prodProcess.getProdLines(prodPlan.getM_ProductionPlan_ID());
-//				for (X_M_ProductionLine prodLine : prodLines) {
-//					log.info(prodPlan+" - "+prodLine);
-//					// suche in best die bestellung, die prodLine enthält und setze Lagerort wie in b
-//					MOrder b = sucheCompInBestellungen(bestgen, prodLine.getM_Product_ID());
-//					if(b==null) {
-//						// nichts gefunden : locator kann 1000003 == OPD_Locator_ID bleiben
-//					} else {
-//						if(b.getM_Warehouse_ID()==ZEPPELIN_Warehouse_ID) {
-//							prodLine.setM_Locator_ID(MeetOrderRequisition.ZEPPELIN_Locator_ID);
-//							prodLine.saveEx();
-//						}
-//					}
-//				}
-//			}
-		}
+//		if(lProductionBatch.isEmpty()) {
+//			// nix tun, da keine Produktion angelegt
+//		} else {
+//			lProductionBatch.forEach((prod) -> {
+//				prod.prepareIt();
+//				prod.completeIt();				
+//			});		
+//		}
 
 		return this.sendMsg(this.getMsg());
 	}

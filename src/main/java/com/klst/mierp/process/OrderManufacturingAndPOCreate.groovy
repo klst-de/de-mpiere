@@ -1,4 +1,4 @@
-// bridge to com.klst.mierp.process.OrderPOCreate
+// Feature #1747 : 22.06.2018 - bridge to com.klst.mierp.process.OrderPOCreate
 package com.klst.mierp.process
 
 import groovy.lang.Binding

@@ -115,7 +115,7 @@ public class OrderPOCreate extends SvrWfProcess {
 		
 		// liefert org.adempiere.exceptions.PeriodClosedException: Periode geschlossen Datum=2018-07-05 00:00:00.0, Basisbelegart=Arbeitsauftrag
 		// wenn MovementDate in der Zukunft liegt:
-//		mProductionBatch.setMovementDate(this.mOrder.getDatePromised());
+		mProductionBatch.setMovementDate(this.mOrder.getDatePromised());
 		
 		mProductionBatch.setDescription(""+this.mOrder + " for "+this.mOrder.getC_BPartner());
 		mProductionBatch.setM_Locator_ID(ZEPPELIN_Locator_ID);
@@ -223,17 +223,29 @@ public class OrderPOCreate extends SvrWfProcess {
 					bomSet = new HashSet<MPPProductBOMLine>(); 
 					if(explosion(bom)>0) {
 						
-						try {
-							MProductionBatch pb = createProduction(mProduct,mOrderLine.getQtyOrdered());
-							if(pb.processIt("CO")) { // Complete
-								setMsg("ProductionPlan fertiggestellt für Multiprodukt "+mProduct);
-							} else {
-								setMsg("ProductionPlan vorbereitet für Multiprodukt "+mProduct);
-								lProductionBatch.add( pb );
-							}
+//						try {
+//							MProductionBatch pb = createProduction(mProduct,mOrderLine.getQtyOrdered());
+//							if(pb.processIt("CO")) { // Complete
+//								setMsg("ProductionPlan fertiggestellt für Multiprodukt "+mProduct);
+//							} else {
+//								setMsg("ProductionPlan vorbereitet für Multiprodukt "+mProduct);
+//								lProductionBatch.add( pb );
+//							}
+//							pb.save();
+//						} catch(Exception e) {
+//							return raiseError(e.getMessage(),"***"); 
+//						}
+						// der fehler mit MovementDate passiert nicht in pb, sondern in MProduction objekt
+						MProductionBatch pb = createProduction(mProduct,mOrderLine.getQtyOrdered());
+						//pb.setIsAutoProduction(false); // TODO was macht das? 
+						log.config("status after prepare: "+pb.prepareIt());
+						if( pb.completeIt().equals(DocAction.STATUS_Completed)) {
 							pb.save();
-						} catch(Exception e) {
-							return raiseError(e.getMessage(),"***"); 
+							setMsg("ProductionPlan "+pb+" fertiggestellt für Multiprodukt "+mProduct);
+						} else {
+							log.config("status after complete: "+pb.getDocStatus());
+							//return raiseError("Document not complete: " + pb.getDocStatus(),"check "+pb); 
+							setMsg("ProductionPlan "+pb+" vorbereitet für Multiprodukt "+mProduct);
 						}
 
 						for(Iterator<MPPProductBOMLine> it = bomSet.iterator(); it.hasNext(); ) { 

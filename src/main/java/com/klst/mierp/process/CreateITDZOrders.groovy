@@ -1,5 +1,5 @@
-// Feat #1405, #1687 : 08.06.2018 - Xls to MOrder
-package com.klst.mierp.itdz
+// Feat #1405, #1687 : 22.06.2018 - Xls to MOrder
+package com.klst.mierp.process
 
 import groovy.lang.Binding
 import groovy.lang.Script
@@ -250,7 +250,7 @@ WHERE ad_client_id = ${this._pi.getAD_Client_ID()} AND ad_org_id IN( 0 , ${this.
 		if(bpList.isEmpty()) {
 			println "${CLASSNAME}:getBPartner keinen Partner gefunden für '${likename}'"
 			addMsg("keinen Partner zum Liefern gefunden für '${likename}' - ersatzweise ITDZ")
-			// nehme ITDZ
+			// nehme ITDZ, mögliche Ursache: Partner steht nicht mit ITDZ Rechnungsadressen-Beziehung
 			mBPartner = MBPartner.newInstance(ctx, ITDZ_ID, trxName)
 			bpList.add(mBPartner)
 		} else if(bpList.size()>1) {
